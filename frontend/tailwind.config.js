@@ -11,7 +11,10 @@ export default {
         },
         fontFamily: {
           sans: ['Outfit', 'sans-serif']
-        },  
+        },
+        gridTemplateColumns:{
+          'auto':'repeat(auto-full, minmax(200px, 1fr))'
+        },
       },
     },
     plugins: [],
