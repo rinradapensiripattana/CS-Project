@@ -12,6 +12,8 @@ import doctor1 from './Doctor1.png'
 import doctor2 from './Doctor2.png'
 import doctor3 from './Doctor3.png'
 import info_icon from './info_icon.svg'
+import about_image from './about_image.png'
+import contact_image from './contact_image.png'
 
 export const assets = {
   logo,
@@ -28,6 +30,8 @@ export const assets = {
   doctor2,
   doctor3,
   info_icon,
+  about_image,
+  contact_image
 }
 
 export const ourservices = [
