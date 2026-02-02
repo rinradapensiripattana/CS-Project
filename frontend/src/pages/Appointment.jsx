@@ -106,7 +106,7 @@ const Appointment = () => {
     {/* Booking Slot */}
     <div className='sm:ml-[160px] mt-4 font-medium text-gray-700'>
       <p>Booking slots</p>
-      <div className='flex gap-3 items-center w-full overflow-x-scroll mt-4'>
+      <div className='flex gap-3 items-center w-full overflow-x-scroll scrollbar-hide mt-4'>
         {
           docSlots.length && docSlots.map((item,index)=>(
             <div onClick={() => setSlotIndex(index)} key={index} className={`text-center py-6 min-w-16 rounded-full cursor-pointer border transition-all duration-200 ${slotIndex === index ? 'bg-primary text-white' : 'border border-gray-200'}`}>

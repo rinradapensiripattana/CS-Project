@@ -8,14 +8,14 @@ const Footer = () => {
 
             {/* ---- Left Section*/}
             <div>
-                <img className='mb-5 w-40'src={assets.logo} alt="" />
+                <img className='mb-3 w-40'src={assets.logo} alt="" />
                 <p className='w-full md:w-2/3 text-gray-600 leading-6'>We believe that quality healthcare begins with understanding and genuine care for each individual. Every step of examination, diagnosis, and treatment is carried out with professionalism, safety, and responsibility. Our goal is to provide care you can trust, so you can live each day with confidence and peace of mind.</p>
             </div>
 
             
             {/* ---- Center Section*/}
             <div>
-                <p className='text-xl font-medium mb-5'>COMPANY</p>
+                <p className='text-xl font-medium mb-3'>COMPANY</p>
                 <ul className='flex flex-col gap-2 text-gray-600'>
                     <li>Home</li>
                     <li>About us</li>
@@ -25,7 +25,7 @@ const Footer = () => {
 
             {/* ---- Right Section*/}
             <div>
-                <p className='text-xl font-medium mb-5'>GET IN TOUCH</p>
+                <p className='text-xl font-medium mb-3'>GET IN TOUCH</p>
                 <ul className='flex flex-col gap-2 text-gray-600'>
                     <li>021231234</li>
                     <li>hellodoctor@gmail.com</li>
