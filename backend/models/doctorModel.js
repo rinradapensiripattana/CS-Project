@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const doctorSchema = new mongoose.Schema({
-    id: { type: String, required: true },
+    // id: { type: String, required: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true }, // ใช้ login
     password: { type: String, required: true }, // ใช้ login

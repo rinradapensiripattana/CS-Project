@@ -9,11 +9,11 @@ import jwt from "jsonwebtoken"
 const addDoctor = async (req, res) => {
 
     try {
-        const { id,name, email, password, speciality, degree, experience, about} = req.body
+        const { name, email, password, degree, experience, about} = req.body
         const imageFile = req.file
 
         // checking for all data to add doctor
-        if (!id || !name || !email || !password || !speciality || !degree || !experience || !about ) {
+        if (!name || !email || !password || !degree || !experience || !about ) {
             return res.json({ success: false, message: "Missing Details" })
         }
 
@@ -36,12 +36,10 @@ const addDoctor = async (req, res) => {
         const imageUrl = imageUpload.secure_url
 
         const doctorData = {
-            id,
             name,
             email,
             image: imageUrl,
             password: hashedPassword,
-            speciality,
             degree,
             experience,
             about,
