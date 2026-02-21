@@ -75,7 +75,7 @@ const MyAppointment = () => {
         My Appointments
       </p>
       <div>
-        {appointments.slice(0, 2).map((item, index) => (
+        {appointments.map((item, index) => (
           <div
             className="grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-2 border-b"
             key={index}
@@ -96,6 +96,7 @@ const MyAppointment = () => {
             </div>
             <div className="flex flex-col gap-2 justify-end">
               {!item.cancelled && <button onClick={() => cancelAppointment(item._id)} className="text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounde hover:bg-red-700 hover:text-white translate-all duration-300 ">Cancel appointment </button> }
+               {item.cancelled && !item.isCompleted && <button className='sm:min-w-48 py-2 border border-red-500 rounded text-red-500 rounded text-red-500 text-sm'>Appointment cancelled</button>}
             </div>
           </div>
         ))}
