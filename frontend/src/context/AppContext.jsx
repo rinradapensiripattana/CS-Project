@@ -14,7 +14,7 @@ const AppContextProvider = (props) => {
     const [userData, setUserData] = useState(false)
 
     // Getting Doctors using API
-    const getDoctosData = async () => {
+    const getDoctorsData = async () => {
 
         try {
 
@@ -53,7 +53,7 @@ const AppContextProvider = (props) => {
     }
 
     useEffect(() => {
-        getDoctosData()
+        getDoctorsData()
     }, [])
 
     useEffect(() => {
@@ -63,7 +63,7 @@ const AppContextProvider = (props) => {
     }, [token])
 
     const value = {
-        doctors, getDoctosData,
+        doctors, getDoctorsData,
         currencySymbol,
         backendUrl,
         token, setToken,
