@@ -7,11 +7,11 @@ import { assets } from "../assets/assets";
 
 const MyAppointment = () => {
   const { backendUrl, token } = useContext(AppContext)
-  const navigate = useNavigate()
+  
 
   const [appointments, setAppointments] = useState([]);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
   // Function to format the date eg. ( 20_01_2000 => 20 Jan 2000 )
@@ -19,8 +19,10 @@ const MyAppointment = () => {
     const dateArray = slotDate.split("_");
     return (
       dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2]
-    );
-  };
+    )
+  }
+
+  const navigate = useNavigate()
 
   // Getting User Appointments Data Using API
   const getUserAppointments = async () => {

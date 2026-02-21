@@ -5,6 +5,7 @@ import create_appointment from './create_appointment.svg'
 import add_icon from './add_icon.svg'
 import people_icon from './people_icon.svg'
 import upload_area from './upload_area.svg'
+import cancel_icon from './cancel_icon.svg'
 
 export const assets = {
     logo,
@@ -14,4 +15,5 @@ export const assets = {
     add_icon,
     people_icon,
     upload_area,
+    cancel_icon
 }
