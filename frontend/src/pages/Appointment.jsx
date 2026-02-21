@@ -1,14 +1,14 @@
-import React, { useContext, useEffect, useState } from "react";
-import { AppContext } from "../context/AppContext";
-import { assets } from "../assets/assets";
-import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
-import axios from "axios";
+import React, { useContext, useEffect, useState } from "react"
+import { AppContext } from "../context/AppContext"
+import { assets } from "../assets/assets"
+import { useNavigate, useParams } from "react-router-dom"
+import { toast } from "react-toastify"
+import axios from "axios"
 
 const Appointment = () => {
-  const { docId } = useParams();
-  const { doctors, backendUrl, token, getDoctorsData } = useContext(AppContext);
-  const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const { docId } = useParams()
+  const { doctors, backendUrl, token, getDoctorsData } = useContext(AppContext)
+  const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
   const months = [
     "Jan",
     "Feb",
@@ -22,17 +22,17 @@ const Appointment = () => {
     "Oct",
     "Nov",
     "Dec",
-  ];
+  ]
 
   const navigate = useNavigate();
 
-  const [docInfo, setDocInfo] = useState(null);
-  const [docSlots, setDocSlots] = useState([]);
-  const [slotIndex, setSlotIndex] = useState(0);
-  const [slotTime, setSlotTime] = useState("");
+  const [docInfo, setDocInfo] = useState(null)
+  const [docSlots, setDocSlots] = useState([])
+  const [slotIndex, setSlotIndex] = useState(0)
+  const [slotTime, setSlotTime] = useState("")
 
   const fetchDocInFo = async () => {
-    const docInfo = doctors.find((doc) => doc._id === docId);
+    const docInfo = doctors.find((doc) => doc._id === docId) 
     setDocInfo(docInfo);
   };
 
@@ -87,7 +87,7 @@ const Appointment = () => {
           timeSlot.push({
             datetime: new Date(currentDate),
             time: formattedTime,
-          });
+          })
         }
 
         // Increment current time by 30 minutes
