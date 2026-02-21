@@ -6,24 +6,13 @@ import { toast } from "react-toastify";
 import { assets } from "../assets/assets";
 
 const MyAppointment = () => {
-  const { backendUrl, token } = useContext(AppContext);
+  const { backendUrl, token } = useContext(AppContext)
+  const navigate = useNavigate()
 
   const [appointments, setAppointments] = useState([]);
 
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
 
   // Function to format the date eg. ( 20_01_2000 => 20 Jan 2000 )
   const slotDateFormat = (slotDate) => {
@@ -49,7 +38,28 @@ const MyAppointment = () => {
       console.log(error);
       toast.error(error.message);
     }
-  };
+  }
+
+  // Function to cancel appointment Using API
+    const cancelAppointment = async (appointmentId) => {
+
+        try {
+
+            const { data } = await axios.post(backendUrl + '/api/user/cancel-appointment', { appointmentId }, { headers: { token } })
+
+            if (data.success) {
+                toast.success(data.message)
+                getUserAppointments()
+            } else {
+                toast.error(data.message)
+            }
+
+        } catch (error) {
+            console.log(error)
+            toast.error(error.message)
+        }
+
+    }
 
   useEffect(() => {
     if (token) {
@@ -84,12 +94,8 @@ const MyAppointment = () => {
               <p className="text-sm mt-auto">
                 <span className="text-sm text-neutral-700 font-medium">Date & Time : </span>{slotDateFormat(item.slotDate)} |  {item.slotTime} </p>
             </div>
-            
-
             <div className="flex flex-col gap-2 justify-end">
-              <button className="text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounde hover:bg-red-700 hover:text-white translate-all duration-300 ">
-                Cancel appointment
-              </button>
+              {!item.cancelled && <button onClick={() => cancelAppointment(item._id)} className="text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounde hover:bg-red-700 hover:text-white translate-all duration-300 ">Cancel appointment </button> }
             </div>
           </div>
         ))}
