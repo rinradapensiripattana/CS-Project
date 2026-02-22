@@ -2,10 +2,12 @@ import React, { useContext } from 'react'
 import { AdminContext } from '../context/AdminContext'
 import { NavLink } from 'react-router-dom'
 import { assets } from '../assets/assets'
+import { DoctorContext } from '../context/DoctorContext'
 
 const Sidebar = () => {
 
     const {aToken} = useContext(AdminContext)
+    const {dToken} = useContext(DoctorContext)
 
   return (
     <div className='min-h-screen bg-white border-r'>
@@ -34,6 +36,29 @@ const Sidebar = () => {
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-list'}>
                     <img src={assets.people_icon} alt="" />
                     <p>Doctors List</p>
+                </NavLink>
+            </ul>
+        }
+        {
+            dToken && <ul className='text-[#515151] mt-5'>
+                <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-dashboard'}>
+                    <img src={assets.home_icon} alt="" />
+                    <p>Dashboard</p>
+                </NavLink>
+
+                <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-appointments'}>
+                    <img src={assets.appoinment_icon} alt="" />
+                    <p>All appointments</p>
+                </NavLink>
+
+                <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/create-appointment'}>
+                    <img src={assets.create_appointment} alt="" />
+                    <p>Create an Appointment</p>
+                </NavLink>
+
+                <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-profile'}>
+                    <img src={assets.people_icon} alt="" />
+                    <p>Profile</p>
                 </NavLink>
             </ul>
         }
