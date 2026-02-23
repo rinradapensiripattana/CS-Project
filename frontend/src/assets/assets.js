@@ -40,23 +40,23 @@ export const assets = {
 
 export const ourservices = [
   {
-    title : 'ตรวจรักษาโรคทั่วไป',
+    title : 'บริการรักษาโรคทั่วไป ',
     image: general_checkup
   },
   {
-    title : 'ไข้ ไอ เจ็บคอ ปวดศีรษะ',
+    title : 'ระบบนัดหมาย',
     image: fever
   },
   {
-    title : 'จ่ายยาและติดตามอาการ',
+    title : 'บริการวัคซีน',
     image: medicine
   },
   {
-    title : 'ตรวจสุขภาพเบื้องต้น',
+    title : 'สะดวก รวดเร็ว',
     image: health_check
   },
   {
-    title : 'เด็ก / ผู้ใหญ่ / ผู้สูงอายุ',
+    title : 'ดูแลรักษาอย่างเป็นกันเอง',
     image: service5
   },
 ]
