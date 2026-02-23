@@ -15,27 +15,27 @@ const Sidebar = () => {
             aToken && <ul className='text-[#515151] mt-5'>
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/admin-dashboard'}>
                     <img src={assets.home_icon} alt="" />
-                    <p>Dashboard</p>
+                    <p className='hidden md:block'>Dashboard</p>
                 </NavLink>
 
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/all-appointments'}>
                     <img src={assets.appoinment_icon} alt="" />
-                    <p>All appointments</p>
+                    <p className='hidden md:block'>All appointments</p>
                 </NavLink>
 
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/create-appointment'}>
                     <img src={assets.create_appointment} alt="" />
-                    <p>Create an Appointment</p>
+                    <p className='hidden md:block'>Create an Appointment</p>
                 </NavLink>
 
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/add-doctor'}>
                     <img src={assets.add_icon} alt="" />
-                    <p>Add Doctor</p>
+                    <p className='hidden md:block'>Add Doctor</p>
                 </NavLink>
 
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-list'}>
                     <img src={assets.people_icon} alt="" />
-                    <p>Doctors List</p>
+                    <p className='hidden md:block'>Doctors List</p>
                 </NavLink>
             </ul>
         }
@@ -43,22 +43,22 @@ const Sidebar = () => {
             dToken && <ul className='text-[#515151] mt-5'>
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-dashboard'}>
                     <img src={assets.home_icon} alt="" />
-                    <p>Dashboard</p>
+                    <p className='hidden md:block'>Dashboard</p>
                 </NavLink>
 
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-appointments'}>
                     <img src={assets.appoinment_icon} alt="" />
-                    <p>All appointments</p>
+                    <p className='hidden md:block'>All appointments</p>
                 </NavLink>
 
-                <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/create-appointment'}>
+                <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-create-appointment'}>
                     <img src={assets.create_appointment} alt="" />
-                    <p>Create an Appointment</p>
+                    <p className='hidden md:block'>Create an Appointment</p>
                 </NavLink>
 
                 <NavLink className={({isActive})=> `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? 'bg-[#D5DDE2] border-r-4 border-primary' : ''}`} to={'/doctor-profile'}>
                     <img src={assets.people_icon} alt="" />
-                    <p>Profile</p>
+                    <p className='hidden md:block'>Profile</p>
                 </NavLink>
             </ul>
         }
