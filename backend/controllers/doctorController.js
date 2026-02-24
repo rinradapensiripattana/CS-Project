@@ -137,9 +137,9 @@ const doctorProfile = async (req, res) => {
 const updateDoctorProfile = async (req, res) => {
     try {
 
-        const { docId, fees, address, available } = req.body
+        const { docId, about, available } = req.body
 
-        await doctorModel.findByIdAndUpdate(docId, { fees, address, available })
+        await doctorModel.findByIdAndUpdate(docId, { about, available })
 
         res.json({ success: true, message: 'Profile Updated' })
 
@@ -157,14 +157,6 @@ const doctorDashboard = async (req, res) => {
 
         const appointments = await appointmentModel.find({ docId })
 
-        let earnings = 0
-
-        appointments.map((item) => {
-            if (item.isCompleted || item.payment) {
-                earnings += item.amount
-            }
-        })
-
         let patients = []
 
         appointments.map((item) => {
@@ -176,7 +168,6 @@ const doctorDashboard = async (req, res) => {
 
 
         const dashData = {
-            earnings,
             appointments: appointments.length,
             patients: patients.length,
             latestAppointments: appointments.reverse()
