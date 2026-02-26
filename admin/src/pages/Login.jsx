@@ -9,6 +9,9 @@ const Login = () => {
   const [state, setState] = useState("Admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  // จุดที่แก้ 1: เพิ่ม state สำหรับการโชว์รหัสผ่านที่ค้างอยู่ในโค้ดเดิม
+  const [showPassword, setShowPassword] = useState(false);
 
   const { setAToken, backendUrl } = useContext(AdminContext);
   const { setDToken } = useContext(DoctorContext);
@@ -22,7 +25,6 @@ const Login = () => {
           email,
           password,
         });
-        // login สำเร็จ
         if (data.success) {
           localStorage.setItem("aToken", data.token);
           setAToken(data.token);
@@ -42,11 +44,9 @@ const Login = () => {
           toast.error(data.message);
         }
       }
-
-
     } catch (error) {
-
-        
+      // จุดที่แก้ 2: ใส่ toast แจ้งเตือนกรณี Server error
+      toast.error(error.message);
     }
   };
 
@@ -66,22 +66,31 @@ const Login = () => {
             required
           />
         </div>
-        <div className="w-full">
+        
+        {/* จุดที่แก้ 3: จัดการ div ของ Password ให้ถูกต้องและเพิ่ม relative class */}
+        <div className="w-full relative">
           <p>Password</p>
           <input
             onChange={(e) => setPassword(e.target.value)}
             value={password}
             className="border border-[#dadada] rounded w-full p-2 mt-1"
-            type="password"
+            type={showPassword ? "text" : "password"} // เปลี่ยน type ตาม state
             required
           />
+          <span
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-2 top-8 cursor-pointer text-ms text-gray-500"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </span>
         </div>
+
         <button className="bg-primary text-white w-full py-2 rounded-md text-base mt-2">
           Login
         </button>
+
         {state === "Admin" ? (
           <p>
-            {" "}
             Doctor Login?{" "}
             <span
               className="text-primary underline cursor-pointer"
@@ -92,7 +101,6 @@ const Login = () => {
           </p>
         ) : (
           <p>
-            {" "}
             Admin Login?{" "}
             <span
               className="text-primary underline cursor-pointer"
@@ -102,7 +110,8 @@ const Login = () => {
             </span>
           </p>
         )}
-      </div>
+      </div> 
+      {/* แก้ไขปิด div ให้ครบถ้วน */}
     </form>
   );
 };
