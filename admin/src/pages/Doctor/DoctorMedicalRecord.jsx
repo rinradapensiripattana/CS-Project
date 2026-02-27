@@ -82,10 +82,12 @@ const DoctorMedicalRecord = () => {
               {appointmentData.userData.name}
             </p>
             <p className="text-gray-600">
-              Age: {calculateAge(appointmentData.userData.dob)}
+              {appointmentData.userData.gender} | Age:{" "}
+              {calculateAge(appointmentData.userData.dob)}
             </p>
             <p className="text-gray-600">
-              Appointment: {slotDateFormat(appointmentData.slotDate)} |{" "}
+              <span className="font-medium">Date & Time :</span>{" "}
+              {slotDateFormat(appointmentData.slotDate)} |{" "}
               {appointmentData.slotTime}
             </p>
           </div>
