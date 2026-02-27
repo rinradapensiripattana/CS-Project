@@ -105,11 +105,12 @@ const History = () => {
                     Dr. {item.docData.name}
                   </p>
                   <p className="text-sm text-zinc-600">{item.docData.degree}</p>
-                  <p className="text-sm text-zinc-500 font-medium mt-1">
-                    Date: {item.slotDate && slotDateFormat(item.slotDate)} |{" "}
-                    {item.slotTime}
-                  </p>
-                </div>
+              </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-500 font-medium mt-3">
+                  {slotDateFormat(item.slotDate)} | {item.slotTime}
+                </p>
               </div>
             </div>
 
