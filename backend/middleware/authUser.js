@@ -1,25 +1,38 @@
 import jwt from "jsonwebtoken"
 
-// user authentication middleware
-const authUser = async (req, res, next) => {
-    try {
-        const { token } = req.headers
-        if (!token) {
-            return res.json({ success: false, message: 'Not Authorized Login Again' })
-        }
-        const token_decode = jwt.verify(token, process.env.JWT_SECRET)
+const authUser = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization
 
-        if (!req.body) {
-            req.body = {}
-        }
-        
-        req.body.userId = token_decode.id
-        next()
-
-    } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+    if (!authHeader) {
+      return res.status(401).json({
+        success: false,
+        message: "Not Authorized"
+      })
     }
+
+    const token = authHeader.split(" ")[1]
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      })
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+    // ✅ เก็บไว้ใน req.user
+    req.user = { userId: decoded.id }
+
+    next()
+
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    })
+  }
 }
 
 export default authUser

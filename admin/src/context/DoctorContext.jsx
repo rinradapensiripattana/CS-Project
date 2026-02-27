@@ -9,6 +9,18 @@ const DoctorContextProvider = (props) => {
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL
 
+    const axiosInstance = axios.create({
+        baseURL: backendUrl
+    })
+    
+    axiosInstance.interceptors.request.use((config) => {
+        const token = localStorage.getItem("dToken")
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`
+        }
+        return config
+    })
+
     const [dToken, setDToken] = useState(localStorage.getItem('dToken') ? localStorage.getItem('dToken') : '' )
     const [appointments, setAppointments] = useState([])
     const [dashData, setDashData] = useState(false)
@@ -16,7 +28,7 @@ const DoctorContextProvider = (props) => {
 
     const getAppointments = async () => {
         try{
-            const {data} = await axios.get(backendUrl + '/api/doctor/appointments', {headers:{dToken}})
+            const { data } = await axiosInstance.get('/api/doctor/appointments')
             if (data.success) {
                 setAppointments(data.appointments.reverse())
                 console.log(data.appointments.reverse())
@@ -34,7 +46,10 @@ const DoctorContextProvider = (props) => {
 
             try {
     
-                const { data } = await axios.post(backendUrl + '/api/doctor/cancel-appointment', { appointmentId }, { headers: { dToken } })
+                const { data } = await axiosInstance.post(
+                    '/api/doctor/cancel-appointment',
+                    { appointment_id: appointmentId }
+                )
     
                 if (data.success) {
                     toast.success(data.message)
@@ -57,7 +72,10 @@ const DoctorContextProvider = (props) => {
     
             try {
     
-                const { data } = await axios.post(backendUrl + '/api/doctor/complete-appointment', { appointmentId }, { headers: { dToken } })
+                const { data } = await axiosInstance.post(
+                    '/api/doctor/complete-appointment',
+                    { appointment_id: appointmentId }
+                )
     
                 if (data.success) {
                     toast.success(data.message)
@@ -77,12 +95,7 @@ const DoctorContextProvider = (props) => {
 
     const getDashData = async () => {
         try {
-            const { data } = await axios.get(
-                backendUrl + '/api/doctor/dashboard',
-                {
-                  headers: { dtoken: dToken }
-                }
-              )
+            const { data } = await axiosInstance.get('/api/doctor/dashboard')
             if (data.success) {
                 setDashData(data.dashData)
             } else {
@@ -96,8 +109,7 @@ const DoctorContextProvider = (props) => {
 
     const getProfileData = async () => {
         try {
-            const {data} = await axios.get(backendUrl + '/api/doctor/profile', {headers:{dToken}})
-
+            const { data } = await axiosInstance.get('/api/doctor/profile')
             if(data.success) {
                 setProfileData(data.profileData)
                 console.log(data.profileData)
@@ -106,6 +118,26 @@ const DoctorContextProvider = (props) => {
             console.log(error);
             toast.error(data.message)
         }
+    }
+
+    const loginDoctor = async (email, password) => {
+        const { data } = await axios.post(
+            backendUrl + '/api/doctor/login',
+            { email, password }
+        )
+    
+        if (data.success) {
+            setDToken(data.token)
+            localStorage.setItem("dToken", data.token)
+            toast.success("Login Success")
+        } else {
+            toast.error(data.message)
+        }
+    }
+
+    const logout = () => {
+        setDToken('')
+        localStorage.removeItem('dToken')
     }
 
     const value = {
@@ -118,8 +150,11 @@ const DoctorContextProvider = (props) => {
         dashData, setDashData, getDashData,
         profileData, setProfileData,
         getProfileData,
+        loginDoctor,
+        logout
 
     }
+    
 
     return (
         <DoctorContext.Provider value={value}>
