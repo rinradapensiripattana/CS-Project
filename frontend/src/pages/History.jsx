@@ -1,51 +1,29 @@
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "../context/AppContext";
-import axios from "axios";
 import { toast } from "react-toastify";
 
 const History = () => {
-  const { backendUrl, token } = useContext(AppContext);
+  const { axiosInstance, token, backendUrl } = useContext(AppContext);
   const [historyData, setHistoryData] = useState([]);
   const [filterDate, setFilterDate] = useState("");
 
-  const months = [
-    " ",
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  const slotDateFormat = (slotDate) => {
-    const dateArray = slotDate.split("_");
-    return (
-      dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2]
-    );
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
 
   const getHistory = async () => {
     try {
-      const { data } = await axios.get(backendUrl + "/api/user/appointments", {
-        headers: { token },
-      });
+      const { data } = await axiosInstance.get("/api/user/history");
       if (data.success) {
-        // กรองเฉพาะนัดหมายที่เสร็จสิ้นและมีประวัติการรักษา
-        const filteredData = data.appointments.filter(
-          (item) => item.isCompleted && item.medicalRecord,
-        );
-        setHistoryData(filteredData.reverse());
+        setHistoryData(data.history);
       }
     } catch (error) {
-      console.log(error);
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -53,16 +31,11 @@ const History = () => {
     if (token) {
       getHistory();
     }
-  }, [token, backendUrl]);
+  }, [token]);
 
   const filteredHistory = historyData.filter((item) => {
     if (!filterDate) return true;
-    const parts = item.slotDate.split("_");
-    const day = parts[0].padStart(2, "0");
-    const month = parts[1].padStart(2, "0");
-    const year = parts[2];
-    const formattedDate = `${year}-${month}-${day}`;
-    return formattedDate === filterDate;
+    return item.record_date === filterDate;
   });
 
   return (
@@ -87,50 +60,56 @@ const History = () => {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 mt-5">
-        {filteredHistory.map((item, index) => (
+      <div className="flex flex-col gap-4 mt-5">
+        {filteredHistory.map((item) => (
           <div
-            key={index}
-            className="border border-blue-200 rounded-xl p-3 sm:p-4 bg-white shadow-sm"
+            key={item.record_id}
+            className="border border-primary/40 rounded-xl p-4 sm:p-5 bg-white shadow-sm"
           >
-            <div className="flex flex-col sm:flex-row gap-3 justify-between">
-              <div className="flex gap-3">
+            {/* Header */}
+            <div className="flex justify-between items-center">
+              
+              {/* Doctor */}
+              <div className="flex items-center gap-3">
                 <img
                   className="w-12 h-12 rounded-full object-cover bg-indigo-50"
-                  src={item.docData.image}
+                  src={
+                    item.doctor_image
+                      ? backendUrl + item.doctor_image
+                      : "/default_image.png"
+                  }
                   alt=""
                 />
-                <div>
-                  <p className="text-sm font-medium text-zinc-700">
-                    Dr. {item.docData.name}
-                  </p>
-                  <p className="text-sm text-zinc-600">{item.docData.degree}</p>
-              </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500 font-medium mt-3">
-                  {slotDateFormat(item.slotDate)} | {item.slotTime}
+                <p className="text-sm font-semibold text-zinc-800">
+                  {item.doctor_name}
                 </p>
               </div>
+
+              {/* Date */}
+              <p className="text-sm text-gray-500 font-medium">
+                {formatDate(item.record_date)}
+              </p>
             </div>
 
-            <div className="mt-2 pt-2 border-t border-gray-100">
-              <p className="text-sm font-medium text-zinc-700 mb-0.5">
-                Symptom (อาการ) :
-              </p>
-              <p className="text-sm text-gray-600 mb-2 whitespace-pre-wrap">
-                {item.medicalRecord.symptoms}
+            {/* Content */}
+            <div className="mt-4 space-y-2 text-sm text-gray-700">
+              <p>
+                <span className="font-medium text-zinc-800">
+                  Symptom (อาการ) :
+                </span>{" "}
+                {item.symptom || "-"}
               </p>
 
-              <p className="text-sm font-medium text-zinc-700 mb-0.5">
-                Treatment (วิธีการรักษา) :
-              </p>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                {item.medicalRecord.treatment}
+              <p>
+                <span className="font-medium text-zinc-800">
+                  Treatment (วิธีการรักษา) :
+                </span>{" "}
+                {item.treatment || "-"}
               </p>
             </div>
           </div>
         ))}
+
         {filteredHistory.length === 0 && (
           <p className="text-center text-gray-500 mt-10">
             No medical history found.

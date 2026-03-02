@@ -1,152 +1,265 @@
 import jwt from "jsonwebtoken"
-import appointmentModel from "../models/appointmentModel.js"
-import doctorModel from "../models/doctorModel.js"
 import bcrypt from "bcrypt"
 import validator from "validator"
 import { v2 as cloudinary } from "cloudinary"
-import userModel from "../models/userModel.js"
+import db from "../config/mysql.js"
 
-// API for adding doctor
 
+// =======================
+// Add Doctor (SQL Version)
+// =======================
 const addDoctor = async (req, res) => {
-
+    const connection = await db.getConnection()
+  
     try {
-        const { name, email, password, degree, experience, about} = req.body
-        const imageFile = req.file
-
-        // checking for all data to add doctor
-        if (!name || !email || !password || !degree || !experience || !about ) {
-            return res.json({ success: false, message: "Missing Details" })
-        }
-
-        // validating email format
-        if (!validator.isEmail(email)) {
-            return res.json({ success: false, message: "Please enter a valid email" })
-        }
-
-        // validating strong password
-        if (password.length < 8) {
-            return res.json({ success: false, message: "Please enter a strong password" })
-        }
-
-        // hashing user password
-        const salt = await bcrypt.genSalt(10); // the more no. round the more time it will take
-        const hashedPassword = await bcrypt.hash(password, salt)
-
-        // upload image to cloudinary
-        const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: "image" })
-        const imageUrl = imageUpload.secure_url
-
-        const doctorData = {
-            name,
-            email,
-            image: imageUrl,
-            password: hashedPassword,
-            degree,
-            experience,
-            about,
-            date: Date.now()
-        }
-
-        const newDoctor = new doctorModel(doctorData)
-        await newDoctor.save()
-        res.json({ success: true, message: 'Doctor Added' })
-
-
-
+      const { name, email, password, degree, experience, about } = req.body
+  
+      if (!req.file) {
+        return res.json({ success: false, message: "Image not uploaded" })
+      }
+  
+      await connection.beginTransaction()
+  
+      const imagePath = `/uploads/${req.file.filename}`
+      const hashedPassword = await bcrypt.hash(password, 10)
+  
+      // Insert Users
+      const [userResult] = await connection.execute(
+        `INSERT INTO Users (name, email, password, role, image)
+         VALUES (?, ?, ?, 'doctor', ?)`,
+        [name, email, hashedPassword, imagePath]
+      )
+  
+      const userId = userResult.insertId
+  
+      // Insert Doctor (แก้ลำดับตรงนี้)
+      await connection.execute(
+        `INSERT INTO Doctor (user_id, degree, available, experience, about)
+         VALUES (?, ?, 1, ?, ?)`,
+        [userId, degree, experience, about]
+      )
+  
+      await connection.commit()
+  
+      res.json({ success: true, message: "Doctor Added Successfully" })
+  
     } catch (error) {
-
-        console.log(error)
-        res.json({ success: false, message: error.message })
-
+      await connection.rollback()
+      res.json({ success: false, message: error.message })
+    } finally {
+      connection.release()
     }
+  }
 
 
-}
+// =======================
+// Admin Login (SQL)
+// =======================
 
-// API for admin login
 const loginAdmin = async (req, res) => {
     try {
-
         const { email, password } = req.body
-        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            const token = jwt.sign(email + password, process.env.JWT_SECRET)
-            res.json({ success: true, token })
-        } else {
-            res.json({ success: false, message: "Invalid credentials" })
+
+        const [rows] = await db.execute(
+            "SELECT * FROM Users WHERE email = ? AND role = 'admin'",
+            [email]
+        )
+
+        if (rows.length === 0) {
+            return res.json({ success: false, message: "Invalid credentials" })
         }
 
+        const admin = rows[0]
+
+        const isMatch = await bcrypt.compare(password, admin.password)
+
+        if (!isMatch) {
+            return res.json({ success: false, message: "Invalid credentials" })
+        }
+
+        const token = jwt.sign(
+            { id: admin.user_id, role: admin.role },
+            process.env.JWT_SECRET
+        )
+
+        res.json({ success: true, token })
 
     } catch (error) {
-        console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
 
-// API to get all doctors list for admin panel
+
+// =======================
+// Get All Doctors
+// =======================
 const allDoctors = async (req, res) => {
     try {
 
-        const doctors = await doctorModel.find({}).select('-password')
+        const [doctors] = await db.execute(`
+            SELECT 
+                d.doctor_id,
+                d.degree,
+                d.experience,
+                d.about,
+                d.available,
+                u.name,
+                u.email,
+                u.image
+            FROM Doctor d
+            JOIN Users u ON d.user_id = u.user_id
+        `)
+
         res.json({ success: true, doctors })
 
     } catch (error) {
-        console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
 
-// API to get all appointments list
+
+// =======================
+// Get All Appointments
+// =======================
 const appointmentsAdmin = async (req, res) => {
     try {
-
-        const appointments = await appointmentModel.find({})
-        res.json({ success: true, appointments })
-
+      const [appointments] = await db.execute(`
+        SELECT 
+          a.appointment_id,
+          a.appointment_date,
+          a.appointment_time,
+          a.status,
+  
+          pu.name AS patient_name,
+          pu.image AS patient_image,
+  
+          du.name AS doctor_name,
+          du.image AS doctor_image
+  
+        FROM Appointment a
+  
+        LEFT JOIN Patient p ON a.patient_id = p.patient_id
+        LEFT JOIN Users pu ON p.user_id = pu.user_id
+  
+        LEFT JOIN Doctor d ON a.doctor_id = d.doctor_id
+        LEFT JOIN Users du ON d.user_id = du.user_id
+  
+        ORDER BY a.appointment_date ASC, a.appointment_time ASC
+      `);
+  
+      res.json({ success: true, appointments });
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+      res.json({ success: false, message: error.message });
     }
+  };
 
-}
 
-// API for appointment cancellation
+
+// =======================
+// Cancel Appointment
+// =======================
+
 const appointmentCancel = async (req, res) => {
     try {
 
-        const { appointmentId } = req.body
-        await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true })
+        const { id } = req.body   // 🔥 รับชื่อ id
 
-        res.json({ success: true, message: 'Appointment Cancelled' })
+        await db.execute(
+            "UPDATE Appointment SET status = 'cancelled' WHERE appointment_id = ?",
+            [id]
+        )
+
+        res.json({
+            success: true,
+            message: "Appointment Cancelled"
+        })
 
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        res.json({
+            success: false,
+            message: error.message
+        })
     }
-
 }
 
-// API to get dashboard data for admin panel
+
+// =======================
+// Dashboard Data
+// =======================
 const adminDashboard = async (req, res) => {
     try {
 
-        const doctors = await doctorModel.find({})
-        const users = await userModel.find({})
-        const appointments = await appointmentModel.find({})
+        const [doctorCount] = await db.execute(
+            "SELECT COUNT(*) as total FROM Doctor"
+        )
+
+        const [patientCount] = await db.execute(
+            "SELECT COUNT(*) as total FROM Users WHERE role = 'patient'"
+        )
+
+        const [appointmentCount] = await db.execute(
+            "SELECT COUNT(*) as total FROM Appointment"
+        )
+
+        // 🔥 JOIN ถูกต้องตามโครงสร้างจริงของเธอ
+        const [latestAppointments] = await db.execute(`
+            SELECT 
+                a.appointment_id,
+                a.appointment_date,
+                a.appointment_time,
+                a.status,
+                u.name AS doctor_name,
+                u.image AS doctor_image
+            FROM Appointment a
+            JOIN Doctor d ON a.doctor_id = d.doctor_id
+            JOIN Users u ON d.user_id = u.user_id
+            ORDER BY a.appointment_id DESC
+            LIMIT 5
+        `)
 
         const dashData = {
-            doctors: doctors.length,
-            appointments: appointments.length,
-            patients: users.length,
-            latestAppointments: appointments.reverse()
+            doctors: doctorCount[0].total,
+            patients: patientCount[0].total,
+            appointments: appointmentCount[0].total,
+            latestAppointments
         }
 
         res.json({ success: true, dashData })
 
     } catch (error) {
-        console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
 
-export {addDoctor, loginAdmin, allDoctors, appointmentsAdmin, appointmentCancel, adminDashboard}
+const changeAvailability = async (req, res) => {
+    try {
+
+        const { doctorId } = req.body
+
+        await db.execute(
+            "UPDATE Doctor SET available = NOT available WHERE doctor_id = ?",
+            [doctorId]
+        )
+
+        res.json({
+            success: true,
+            message: "Availability Updated"
+        })
+
+    } catch (error) {
+        res.json({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+export {
+    addDoctor,
+    loginAdmin,
+    allDoctors,
+    appointmentsAdmin,
+    appointmentCancel,
+    adminDashboard,
+    changeAvailability
+}

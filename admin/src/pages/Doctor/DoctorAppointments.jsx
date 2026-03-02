@@ -5,10 +5,16 @@ import { AppContext } from "../../context/AppContext";
 import { assets } from "../../assets/assets";
 
 const DoctorAppointments = () => {
-  const { dToken, appointments, getAppointments, cancelAppointment } =
-    useContext(DoctorContext);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  const { slotDateFormat, calculateAge } = useContext(AppContext);
+  const {
+    dToken,
+    appointments,
+    getAppointments,
+    cancelAppointment,
+  } = useContext(DoctorContext);
+
+  const { calculateAge } = useContext(AppContext);
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -28,22 +34,22 @@ const DoctorAppointments = () => {
     setToDate("");
   };
 
-  // 🔎 Filter by status
+  // Filter by status
   const filteredByStatus = appointments.filter((item) => {
-    if (activeTab === "upcoming") return !item.cancelled && !item.isCompleted;
-    if (activeTab === "completed") return item.isCompleted;
-    if (activeTab === "cancelled") return item.cancelled;
+    if (activeTab === "upcoming") return item.status === "confirmed";
+    if (activeTab === "completed") return item.status === "completed";
+    if (activeTab === "cancelled") return item.status === "cancelled";
     return true;
   });
 
-  // 🔎 Filter by search
+  // Search
   const filteredBySearch = filteredByStatus.filter((item) =>
-    item.userData.name.toLowerCase().includes(search.toLowerCase()),
+    item.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // 🔎 Filter by date range
-  const finalFiltered = filteredBySearch.filter((item) => {
-    const appointmentDate = new Date(item.slotDate);
+  // Date filter
+  const filteredByDate = filteredBySearch.filter((item) => {
+    const appointmentDate = new Date(item.appointment_date);
 
     if (fromDate && appointmentDate < new Date(fromDate)) return false;
     if (toDate && appointmentDate > new Date(toDate)) return false;
@@ -51,9 +57,22 @@ const DoctorAppointments = () => {
     return true;
   });
 
+  // Sort
+  const finalFiltered = [...filteredByDate].sort((a, b) => {
+    const dateA = new Date(a.appointment_date);
+    const dateB = new Date(b.appointment_date);
+
+    const [hourA, minuteA] = a.appointment_time.split(":");
+    const [hourB, minuteB] = b.appointment_time.split(":");
+
+    dateA.setHours(hourA, minuteA, 0);
+    dateB.setHours(hourB, minuteB, 0);
+
+    return dateA - dateB;
+  });
+
   return (
     <div className="w-full max-w-6xl m-5">
-      {/* Header + Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
         <p className="text-lg font-medium">Doctor Appointments</p>
 
@@ -66,19 +85,27 @@ const DoctorAppointments = () => {
             className="border px-3 py-1 rounded text-sm w-48"
           />
 
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="border px-2 py-1 rounded text-sm"
-          />
+          {/* From */}
+          <div className="flex items-center gap-1">
+            <label className="text-sm text-gray-600">From</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="border px-2 py-1 rounded text-sm"
+            />
+          </div>
 
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="border px-2 py-1 rounded text-sm"
-          />
+          {/* To */}
+          <div className="flex items-center gap-1">
+            <label className="text-sm text-gray-600">To</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="border px-2 py-1 rounded text-sm"
+            />
+          </div>
 
           {(search || fromDate || toDate) && (
             <button
@@ -93,43 +120,23 @@ const DoctorAppointments = () => {
 
       {/* Tabs */}
       <div className="flex gap-6 border-b mb-4">
-        <button
-          onClick={() => setActiveTab("upcoming")}
-          className={`pb-2 capitalize ${
-            activeTab === "upcoming"
-              ? "border-b-2 border-primary text-primary font-medium"
-              : "text-gray-500"
-          }`}
-        >
-          Upcoming
-        </button>
-
-        <button
-          onClick={() => setActiveTab("completed")}
-          className={`pb-2 capitalize ${
-            activeTab === "completed"
-              ? "border-b-2 border-primary text-primary font-medium"
-              : "text-gray-500"
-          }`}
-        >
-          Completed
-        </button>
-
-        <button
-          onClick={() => setActiveTab("cancelled")}
-          className={`pb-2 capitalize ${
-            activeTab === "cancelled"
-              ? "border-b-2 border-primary text-primary font-medium"
-              : "text-gray-500"
-          }`}
-        >
-          Cancelled
-        </button>
+        {["upcoming", "completed", "cancelled"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-2 capitalize ${
+              activeTab === tab
+                ? "border-b-2 border-primary text-primary font-medium"
+                : "text-gray-500"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      {/* Table */}
       <div className="bg-white border rounded text-sm max-h-[70vh] overflow-y-auto">
-        {/* Table Header */}
+        {/* Header */}
         <div className="hidden sm:grid grid-cols-[0.5fr_2fr_1fr_2fr_1fr] gap-2 py-3 px-6 border-b bg-gray-50 font-medium">
           <p>#</p>
           <p>Patient</p>
@@ -138,76 +145,80 @@ const DoctorAppointments = () => {
           <p className="text-center">Action</p>
         </div>
 
-        {/* Empty */}
         {finalFiltered.length === 0 && (
           <p className="text-center py-6 text-gray-400">
             No appointments found
           </p>
         )}
 
-        {/* Rows */}
-        {finalFiltered
-          .slice()
-          .reverse()
-          .map((item, index) => (
-            <div
-              onClick={() =>
-                item.isCompleted &&
-                navigate(`/doctor-medical-record/${item._id}`)
-              }
-              key={item._id}
-              className={`grid grid-cols-[0.5fr_2fr_1fr_2fr_1fr] gap-2 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50 ${item.isCompleted ? "cursor-pointer" : ""}`}
-            >
-              <p>{finalFiltered.length - index}</p>
+        {finalFiltered.map((item, index) => (
+          <div
+            key={item.appointment_id}
+            className="grid grid-cols-[0.5fr_2fr_1fr_2fr_1fr] gap-2 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50"
+          >
+            <p>{index + 1}</p>
 
-              <div className="flex items-center gap-2">
-                <img
-                  src={item.userData.image}
-                  className="w-8 h-8 rounded-full object-cover"
-                  alt=""
-                />
-                <p>{item.userData.name}</p>
-              </div>
-
-              <p>{calculateAge(item.userData.dob)}</p>
-
-              <p>
-                {slotDateFormat(item.slotDate)}, {item.slotTime}
-              </p>
-
-              {/* Action */}
-              <div className="flex justify-center gap-2">
-                {item.cancelled && (
-                  <p className="text-red-400 text-xs font-medium">Cancelled</p>
-                )}
-
-                {item.isCompleted && (
-                  <p className="text-green-500 text-xs font-medium">
-                    Completed
-                  </p>
-                )}
-
-                {!item.cancelled && !item.isCompleted && (
-                  <>
-                    <img
-                      onClick={() => cancelAppointment(item._id)}
-                      className="w-8 cursor-pointer"
-                      src={assets.cancel_icon}
-                      alt=""
-                    />
-                    <img
-                      onClick={() =>
-                        navigate(`/doctor-medical-record/${item._id}`)
-                      }
-                      className="w-8 cursor-pointer"
-                      src={assets.tick_icon}
-                      alt=""
-                    />
-                  </>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              <img
+                src={
+                  item.image
+                    ? `${backendUrl}${item.image}`
+                    : "/default_image.png"
+                }
+                className="w-8 h-8 rounded-full object-cover"
+                alt=""
+              />
+              <p>{item.name}</p>
             </div>
-          ))}
+
+            <p>{calculateAge(item.date_of_birth)}</p>
+
+            <p>
+              {new Date(item.appointment_date).toLocaleDateString("th-TH")} ,{" "}
+              {item.appointment_time}
+            </p>
+
+            <div className="flex justify-center gap-2">
+              {item.status === "cancelled" && (
+                <p className="text-red-400 text-xs font-medium">
+                  Cancelled
+                </p>
+              )}
+
+              {item.status === "completed" && (
+                <p className="text-green-500 text-xs font-medium">
+                  Completed
+                </p>
+              )}
+
+              {item.status === "confirmed" && (
+                <>
+                  <img
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cancelAppointment(item.appointment_id);
+                    }}
+                    className="w-8 cursor-pointer"
+                    src={assets.cancel_icon}
+                    alt=""
+                  />
+
+                  <img
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(
+                        `/doctor-medical-record/${item.appointment_id}`
+                      );
+                    }}
+                    className="w-8 cursor-pointer"
+                    src={assets.tick_icon}
+                    alt=""
+                  />
+                </>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

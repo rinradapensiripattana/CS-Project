@@ -12,6 +12,8 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("Not Selected");
+  const [phone, setPhone] = useState("");
+  const [idNumber, setIdNumber] = useState("");
   const [policy, setPolicy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -23,6 +25,7 @@ const Login = () => {
 
     try {
       if (state === "Sign Up") {
+
         if (gender === "Not Selected") {
           toast.error("Please select gender");
           return;
@@ -33,33 +36,46 @@ const Login = () => {
           return;
         }
 
-        const { data } = await axios.post(backendUrl + "/api/user/register", {
-          name,
-          email,
-          password,
-          dob,
-          gender,
-        });
+        const { data } = await axios.post(
+          backendUrl + "/api/user/register",
+          {
+            name,
+            email,
+            password,
+            dob,
+            gender,
+            phone,
+            id_number: idNumber,
+          }
+        );
 
         if (data.success) {
           localStorage.setItem("token", data.token);
           setToken(data.token);
+          toast.success("Register Success");
         } else {
           toast.error(data.message);
         }
+
       } else {
-        const { data } = await axios.post(backendUrl + "/api/user/login", {
-          email,
-          password,
-        });
+
+        const { data } = await axios.post(
+          backendUrl + "/api/user/login",
+          {
+            email,
+            password,
+          }
+        );
 
         if (data.success) {
           localStorage.setItem("token", data.token);
           setToken(data.token);
+          toast.success("Login Success");
         } else {
           toast.error(data.message);
         }
       }
+
     } catch (error) {
       toast.error(error.message);
     }
@@ -79,87 +95,105 @@ const Login = () => {
           {state === "Sign Up" ? "Create Account" : "Login"}
         </p>
 
-        <p>
-          Please {state === "Sign Up" ? "sign up" : "log in"} to book appointment
-        </p>
-
-        {/* Full Name */}
+        {/* ================= REGISTER FIELDS ================= */}
         {state === "Sign Up" && (
-          <div className="w-full">
-            <p>Full Name</p>
-            <input
-              onChange={(e) => setName(e.target.value)}
-              value={name}
-              className="border border-[#DADADA] rounded w-full p-2 mt-1"
-              type="text"
-              required
-            />
-          </div>
-        )}
-
-        {/* Gender + DOB */}
-        {state === "Sign Up" && (
-          <div className="flex w-full gap-2">
+          <>
             <div className="w-full">
-              <p>Gender</p>
-              <select
-                onChange={(e) => setGender(e.target.value)}
-                value={gender}
-                className="border border-[#DADADA] rounded w-full p-2 mt-1"
-                required
-              >
-                <option value="Not Selected">Select</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
-            </div>
-
-            <div className="w-full">
-              <p>Date of Birth</p>
+              <p>Full Name</p>
               <input
-                onChange={(e) => setDob(e.target.value)}
-                value={dob}
-                className="border border-[#DADADA] rounded w-full p-2 mt-1"
-                type="date"
+                onChange={(e) => setName(e.target.value)}
+                value={name}
+                className="border rounded w-full p-2 mt-1"
+                type="text"
                 required
               />
             </div>
-          </div>
+
+            <div className="w-full">
+              <p>Phone Number</p>
+              <input
+                onChange={(e) => setPhone(e.target.value)}
+                value={phone}
+                className="border rounded w-full p-2 mt-1"
+                type="text"
+                required
+              />
+            </div>
+
+            <div className="w-full">
+              <p>ID Number</p>
+              <input
+                onChange={(e) => setIdNumber(e.target.value)}
+                value={idNumber}
+                className="border rounded w-full p-2 mt-1"
+                type="text"
+                required
+              />
+            </div>
+
+            <div className="flex w-full gap-2">
+              <div className="w-full">
+                <p>Gender</p>
+                <select
+                  onChange={(e) => setGender(e.target.value)}
+                  value={gender}
+                  className="border rounded w-full p-2 mt-1"
+                  required
+                >
+                  <option value="Not Selected">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div className="w-full">
+                <p>Date of Birth</p>
+                <input
+                  onChange={(e) => setDob(e.target.value)}
+                  value={dob}
+                  className="border rounded w-full p-2 mt-1"
+                  type="date"
+                  required
+                />
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Email */}
+        {/* ================= EMAIL ================= */}
         <div className="w-full">
           <p>Email</p>
           <input
             onChange={(e) => setEmail(e.target.value)}
             value={email}
-            className="border border-[#DADADA] rounded w-full p-2 mt-1"
+            className="border rounded w-full p-2 mt-1"
             type="email"
             required
           />
         </div>
 
-        {/* Password */}
+        {/* ================= PASSWORD ================= */}
         <div className="w-full">
           <p>Password</p>
-          <div className="relative mt-1">
+          <div className="relative">
             <input
               onChange={(e) => setPassword(e.target.value)}
               value={password}
-              className="border border-[#DADADA] rounded w-full p-2"
+              className="border rounded w-full p-2 mt-1"
               type={showPassword ? "text" : "password"}
               required
             />
             <span
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-sm text-gray-500"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 cursor-pointer"
             >
               {showPassword ? "Hide" : "Show"}
             </span>
           </div>
         </div>
 
-        {/* Policy Checkbox */}
+        {/* ================= CONSENT ================= */}
         {state === "Sign Up" && (
           <>
             <div className="flex items-center gap-2 w-full mt-2">
@@ -175,7 +209,6 @@ const Login = () => {
               </p>
             </div>
 
-            {/* Privacy Policy */}
             <div className="w-full -mt-2 ml-5 relative">
               <details className="w-full">
                 <summary className="p-1 text-xs cursor-pointer text-gray-500 hover:text-gray-700">
@@ -191,13 +224,14 @@ const Login = () => {
                     </p>
 
                     <p>
-                      เราได้ดำเนินการมาตรการด้านเทคนิคและมาตรการด้านการบริหารจัดการที่เหมาะสม
-                      เพื่อป้องกันไม่ให้ข้อมูลส่วนบุคคลถูกเข้าถึงหรือเปิดเผยโดยไม่ได้รับอนุญาต
+                      ข้อมูลของท่านจะถูกใช้เพื่อวัตถุประสงค์ในการให้บริการทางการแพทย์
+                      การวินิจฉัย และการติดตามผลการรักษาเท่านั้น
                     </p>
 
                     <p>
-                      ข้อมูลของท่านจะถูกใช้เพื่อวัตถุประสงค์ในการให้บริการทางการแพทย์
-                      การวินิจฉัย และการติดตามผลการรักษาเท่านั้น
+                      เราจะไม่เปิดเผยข้อมูลส่วนบุคคลแก่บุคคลภายนอก
+                      โดยไม่ได้รับความยินยอมจากท่าน
+                      เว้นแต่เป็นไปตามที่กฎหมายกำหนด
                     </p>
 
                   </div>
@@ -207,36 +241,24 @@ const Login = () => {
           </>
         )}
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className="bg-primary text-white w-full py-2 my-2 rounded-md text-base"
-        >
+        {/* ================= BUTTON ================= */}
+        <button className="bg-primary text-white w-full py-2 rounded-md mt-2">
           {state === "Sign Up" ? "Create account" : "Login"}
         </button>
 
-        {/* Toggle Login / Sign Up */}
-        {state === "Sign Up" ? (
-          <p>
-            Already have an account?{" "}
-            <span
-              onClick={() => setState("Login")}
-              className="text-primary underline cursor-pointer"
-            >
-              Login here
-            </span>
-          </p>
-        ) : (
-          <p>
-            Create a new account?{" "}
-            <span
-              onClick={() => setState("Sign Up")}
-              className="text-primary underline cursor-pointer"
-            >
-              Click here
-            </span>
-          </p>
-        )}
+        {/* ================= TOGGLE ================= */}
+        <p>
+          {state === "Sign Up" ? "Already have account?" : "Create new account?"}
+          <span
+            onClick={() =>
+              setState(state === "Sign Up" ? "Login" : "Sign Up")
+            }
+            className="text-primary underline cursor-pointer ml-1"
+          >
+            {state === "Sign Up" ? "Login here" : "Sign Up"}
+          </span>
+        </p>
+
       </div>
     </form>
   );

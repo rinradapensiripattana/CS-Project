@@ -17,21 +17,22 @@ const Doctor = () => {
 
         {doctors.map((item) => (
 
-          <div 
+          <div
             onClick={() => navigate(`/appointment/${item.doctor_id}`)}
             className='max-w-[210px] border border-blue-200 rounded-xl
             overflow-hidden cursor-pointer
-            hover:-translate-y-1 transition-all duration-300' 
+            hover:-translate-y-1 transition-all duration-300'
             key={item.doctor_id}
           >
 
-            <img 
+            <img
               className='w-full aspect-[1/1.2] object-cover object-top'
               src={
                 item.image
-                  ? `${backendUrl}/uploads/${item.image}`
+                  ? `${backendUrl}${item.image}`
                   : "/default_image.png"
               }
+              alt={item.name}
             />
 
             <div className='p-4'>
