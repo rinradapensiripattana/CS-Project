@@ -89,16 +89,6 @@ const Sidebar = () => {
             className={({ isActive }) =>
               `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
-            to={"/doctor-create-appointment"}
-          >
-            <img src={assets.create_appointment} alt="" />
-            <p className="hidden md:block">Create an Appointment</p>
-          </NavLink>
-
-          <NavLink
-            className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
-            }
             to={"/doctor-patient"}
           >
             <img className="w-6" src={assets.patient} alt="" />
