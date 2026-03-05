@@ -19,14 +19,19 @@ const addDoctor = async (req, res) => {
 
     await connection.beginTransaction();
 
-    const imagePath = `/uploads/${req.file.filename}`;
+    // Upload image to Cloudinary
+    const imageUpload = await cloudinary.uploader.upload(req.file.path, {
+      resource_type: "image",
+    });
+    const imageUrl = imageUpload.secure_url;
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert Users
     const [userResult] = await connection.execute(
       `INSERT INTO Users (name, email, password, role, image)
          VALUES (?, ?, ?, 'doctor', ?)`,
-      [name, email, hashedPassword, imagePath],
+      [name, email, hashedPassword, imageUrl],
     );
 
     const userId = userResult.insertId;

@@ -78,7 +78,9 @@ const Dashboard = () => {
                 className="rounded-full w-10 h-10 object-cover"
                 src={
                   item.doctor_image
-                    ? `${import.meta.env.VITE_BACKEND_URL}${item.doctor_image}`
+                    ? item.doctor_image.startsWith("http")
+                      ? item.doctor_image
+                      : `${import.meta.env.VITE_BACKEND_URL}${item.doctor_image}`
                     : "/default_image.png"
                 }
                 alt=""

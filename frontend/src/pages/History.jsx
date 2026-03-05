@@ -92,7 +92,9 @@ const History = () => {
                   className="w-12 h-12 rounded-full object-cover bg-indigo-50"
                   src={
                     item.doctor_image
-                      ? backendUrl + item.doctor_image
+                      ? item.doctor_image.startsWith("http")
+                        ? item.doctor_image
+                        : backendUrl + item.doctor_image
                       : "/default_image.png"
                   }
                   alt=""

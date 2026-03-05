@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import db from "../config/mysql.js";
+import { v2 as cloudinary } from "cloudinary";
 
 // API for doctor Login
 const loginDoctor = async (req, res) => {
@@ -318,15 +319,35 @@ const updateDoctorProfile = async (req, res) => {
     const userId = req.doctor.id; // id จาก token = user_id
 
     const about = req.body.about || "";
-    const available = req.body.available ? 1 : 0;
     const experience = req.body.experience || 0;
 
-    const [result] = await db.query(
+    // แปลงค่า available เป็น 1 หรือ 0 (รองรับทั้ง boolean และ string จาก form-data)
+    let available = 0;
+    if (
+      req.body.available === "true" ||
+      req.body.available === true ||
+      req.body.available === "1" ||
+      req.body.available === 1
+    ) {
+      available = 1;
+    }
+
+    await db.query(
       "UPDATE Doctor SET about = ?, available = ?, experience = ? WHERE user_id = ?",
       [about, available, experience, userId],
     );
 
-    console.log("Affected rows:", result.affectedRows);
+    // ถ้ามีการอัปโหลดรูปภาพ ให้บันทึกลงตาราง Users
+    if (req.file) {
+      const imageUpload = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: "image",
+      });
+      const imageUrl = imageUpload.secure_url;
+      await db.query("UPDATE Users SET image = ? WHERE user_id = ?", [
+        imageUrl,
+        userId,
+      ]);
+    }
 
     res.json({ success: true, message: "Profile Updated" });
   } catch (error) {

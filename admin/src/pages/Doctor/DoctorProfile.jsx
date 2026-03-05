@@ -65,7 +65,9 @@ const DoctorProfile = () => {
               className="w-48 h-48 sm:w-56 sm:h-56 object-cover rounded-full border-[6px] border-white shadow-lg relative z-10"
               src={
                 profileData.image
-                  ? `${backendUrl}${profileData.image}`
+                  ? profileData.image.startsWith("http")
+                    ? profileData.image
+                    : `${backendUrl}${profileData.image}`
                   : "/default_image.png"
               }
               onError={(e) => (e.target.src = "/default_image.png")}

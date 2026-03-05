@@ -174,7 +174,9 @@ const DoctorAppointments = () => {
               <img
                 src={
                   item.image
-                    ? `${backendUrl}${item.image}`
+                    ? item.image.startsWith("http")
+                      ? item.image
+                      : `${backendUrl}${item.image}`
                     : "/default_image.png"
                 }
                 className="w-8 h-8 rounded-full object-cover"

@@ -97,7 +97,9 @@ const MyAppointment = () => {
                 className="w-24 h-28 object-cover object-top rounded-lg"
                 src={
                   item.doctor_image
-                    ? backendUrl + item.doctor_image
+                    ? item.doctor_image.startsWith("http")
+                      ? item.doctor_image
+                      : backendUrl + item.doctor_image
                     : "/default_image.png"
                 }
                 alt=""

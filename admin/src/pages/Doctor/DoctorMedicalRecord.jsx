@@ -93,7 +93,9 @@ const DoctorMedicalRecord = () => {
             className="w-24 h-24 rounded-full object-cover border"
             src={
               appointmentData.image
-                ? `${backendUrl}${appointmentData.image}`
+                ? appointmentData.image.startsWith("http")
+                  ? appointmentData.image
+                  : `${backendUrl}${appointmentData.image}`
                 : "/default_image.png"
             }
             onError={(e) => {

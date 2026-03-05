@@ -27,7 +27,7 @@ const MyProfile = () => {
 
       const { data } = await axiosInstance.put(
         "/api/user/update-profile",
-        formData
+        formData,
       );
 
       if (data.success) {
@@ -46,19 +46,18 @@ const MyProfile = () => {
 
   if (!userData) {
     return (
-      <div className="text-center mt-20 text-gray-500">
-        Loading profile...
-      </div>
+      <div className="text-center mt-20 text-gray-500">Loading profile...</div>
     );
   }
 
   const imageUrl = userData.image
-    ? `${backendUrl}${userData.image}`
+    ? userData.image.startsWith("http")
+      ? userData.image
+      : `${backendUrl}${userData.image}`
     : "/default_image.png";
 
   return (
     <div className="max-w-lg flex flex-col gap-4 text-sm pt-5">
-
       {/* ================= IMAGE ================= */}
       {isEdit ? (
         <label htmlFor="image">
@@ -95,20 +94,18 @@ const MyProfile = () => {
           }
         />
       ) : (
-        <p className="text-2xl font-semibold mt-2">
-          {userData.name}
-        </p>
+        <p className="text-2xl font-semibold mt-2">{userData.name}</p>
       )}
 
       <hr />
 
       {/* ================= CONTACT ================= */}
       <div>
-        <p className="underline font-medium mb-2">
-          CONTACT INFORMATION
-        </p>
+        <p className="underline font-medium mb-2">CONTACT INFORMATION</p>
 
-        <p><b>Email:</b></p>
+        <p>
+          <b>Email:</b>
+        </p>
         {isEdit ? (
           <input
             className="bg-gray-50 p-1"
@@ -122,7 +119,9 @@ const MyProfile = () => {
           <p>{userData.email}</p>
         )}
 
-        <p><b>Phone:</b></p>
+        <p>
+          <b>Phone:</b>
+        </p>
         {isEdit ? (
           <input
             className="bg-gray-50 p-1"
@@ -139,11 +138,11 @@ const MyProfile = () => {
 
       {/* ================= BASIC INFO ================= */}
       <div>
-        <p className="underline font-medium mt-4 mb-2">
-          BASIC INFORMATION
-        </p>
+        <p className="underline font-medium mt-4 mb-2">BASIC INFORMATION</p>
 
-        <p><b>Gender:</b></p>
+        <p>
+          <b>Gender:</b>
+        </p>
         {isEdit ? (
           <select
             className="bg-gray-50 p-1"
@@ -161,14 +160,16 @@ const MyProfile = () => {
           <p>{userData.gender || "Not Selected"}</p>
         )}
 
-        <p className="mt-2"><b>Birthday:</b></p>
+        <p className="mt-2">
+          <b>Birthday:</b>
+        </p>
 
         <p>
           {userData.dob
             ? (() => {
-              const [year, month, day] = userData.dob.split("-");
-              return `${day}/${month}/${year}`;
-            })()
+                const [year, month, day] = userData.dob.split("-");
+                return `${day}/${month}/${year}`;
+              })()
             : "Not Selected"}
         </p>
       </div>

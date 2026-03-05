@@ -68,7 +68,9 @@ const DoctorDashboard = () => {
                 className="rounded-full w-10 h-10 object-cover"
                 src={
                   item?.image
-                    ? `${import.meta.env.VITE_BACKEND_URL}${item.image}`
+                    ? item.image.startsWith("http")
+                      ? item.image
+                      : `${import.meta.env.VITE_BACKEND_URL}${item.image}`
                     : "/default_image.png"
                 }
                 alt=""
@@ -122,9 +124,7 @@ const DoctorDashboard = () => {
                       );
 
                       if (new Date() < allowedTime) {
-                        toast.error(
-                          "ยังไม่ถึงเวลานัดหมาย",
-                        );
+                        toast.error("ยังไม่ถึงเวลานัดหมาย");
                         return;
                       }
                       navigate(`/doctor-medical-record/${item.appointment_id}`);

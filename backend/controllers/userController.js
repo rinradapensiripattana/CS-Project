@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../config/mysql.js";
+import { v2 as cloudinary } from "cloudinary";
 
 // =====================================================
 // 🔹 REGISTER USER
@@ -153,7 +154,10 @@ const updateProfile = async (req, res) => {
 
     let imagePath = null;
     if (req.file) {
-      imagePath = "/uploads/" + req.file.filename;
+      const imageUpload = await cloudinary.uploader.upload(req.file.path, {
+        resource_type: "image",
+      });
+      imagePath = imageUpload.secure_url;
     }
 
     await db.query(

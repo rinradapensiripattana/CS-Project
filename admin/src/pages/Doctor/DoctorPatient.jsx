@@ -72,7 +72,9 @@ const DoctorPatient = () => {
                   className="w-12 h-12 rounded-full object-cover"
                   src={
                     item?.image
-                      ? `${import.meta.env.VITE_BACKEND_URL}${item.image}`
+                      ? item.image.startsWith("http")
+                        ? item.image
+                        : `${import.meta.env.VITE_BACKEND_URL}${item.image}`
                       : "/default_image.png"
                   }
                 />

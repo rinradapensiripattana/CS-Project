@@ -183,7 +183,9 @@ const AllAppointments = () => {
               <img
                 src={
                   item.patient_image
-                    ? `${import.meta.env.VITE_BACKEND_URL}${item.patient_image}`
+                    ? item.patient_image.startsWith("http")
+                      ? item.patient_image
+                      : `${import.meta.env.VITE_BACKEND_URL}${item.patient_image}`
                     : "/default_image.png"
                 }
                 className="w-8 h-8 rounded-full object-cover"
@@ -202,7 +204,9 @@ const AllAppointments = () => {
               <img
                 src={
                   item.doctor_image
-                    ? `${import.meta.env.VITE_BACKEND_URL}${item.doctor_image}`
+                    ? item.doctor_image.startsWith("http")
+                      ? item.doctor_image
+                      : `${import.meta.env.VITE_BACKEND_URL}${item.doctor_image}`
                     : "/default_image.png"
                 }
                 className="w-8 h-8 rounded-full object-cover"
