@@ -6,11 +6,9 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const DoctorMedicalRecord = () => {
-  const { dToken, appointments, getAppointments } =
-    useContext(DoctorContext);
+  const { dToken, appointments, getAppointments } = useContext(DoctorContext);
 
-  const { backendUrl, calculateAge } =
-    useContext(AppContext);
+  const { backendUrl, calculateAge } = useContext(AppContext);
 
   const { appointmentId } = useParams();
   const navigate = useNavigate();
@@ -34,10 +32,8 @@ const DoctorMedicalRecord = () => {
   // หา appointment จาก id
   useEffect(() => {
     if (appointments.length > 0) {
-
       const found = appointments.find(
-        (item) =>
-          item.appointment_id.toString() === appointmentId
+        (item) => item.appointment_id.toString() === appointmentId,
       );
 
       if (found) {
@@ -45,7 +41,6 @@ const DoctorMedicalRecord = () => {
         setSymptoms(found.symptoms || "");
         setTreatment(found.treatment || "");
       }
-
     }
   }, [appointments, appointmentId]);
 
@@ -54,7 +49,6 @@ const DoctorMedicalRecord = () => {
     e.preventDefault();
 
     try {
-
       const { data } = await axios.post(
         backendUrl + "/api/doctor/complete-appointment",
         {
@@ -62,17 +56,16 @@ const DoctorMedicalRecord = () => {
           symptoms,
           treatment,
           followup_date: followupDate,
-          followup_time: followupTime
+          followup_time: followupTime,
         },
         {
           headers: {
             Authorization: `Bearer ${dToken}`,
           },
-        }
+        },
       );
 
       if (data.success) {
-
         toast.success("Appointment Completed");
 
         if (followupDate) {
@@ -80,11 +73,9 @@ const DoctorMedicalRecord = () => {
         }
 
         navigate("/doctor-appointments");
-
       } else {
         toast.error(data.message);
       }
-
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong");
@@ -92,18 +83,12 @@ const DoctorMedicalRecord = () => {
   };
 
   return appointmentData ? (
-
     <div className="m-5 w-full max-w-5xl">
-
-      <h2 className="text-lg font-medium mb-4">
-        Medical Record & Treatment
-      </h2>
+      <h2 className="text-lg font-medium mb-4">Medical Record & Treatment</h2>
 
       <div className="bg-white p-8 border rounded shadow-sm">
-
         {/* Patient Info */}
         <div className="flex items-center gap-5 mb-8">
-
           <img
             className="w-24 h-24 rounded-full object-cover border"
             src={
@@ -118,99 +103,73 @@ const DoctorMedicalRecord = () => {
           />
 
           <div>
-            <p className="text-2xl font-semibold">
-              {appointmentData.name}
-            </p>
+            <p className="text-2xl font-semibold">{appointmentData.name}</p>
 
             <p className="text-gray-600">
               Age: {calculateAge(appointmentData.date_of_birth)}
             </p>
 
             <p className="text-gray-600">
-              {new Date(
-                appointmentData.appointment_date
-              ).toLocaleDateString("th-TH")}
+              {new Date(appointmentData.appointment_date).toLocaleDateString(
+                "en-GB",
+                { day: "numeric", month: "short", year: "numeric" },
+              )}
               {" | "}
-              {appointmentData.appointment_time}
+              {appointmentData.appointment_time.slice(0, 5)}
             </p>
           </div>
-
         </div>
 
-
         {/* FORM */}
-        <form
-          onSubmit={onSubmitHandler}
-          className="flex flex-col gap-6"
-        >
-
+        <form onSubmit={onSubmitHandler} className="flex flex-col gap-6">
           {/* Symptoms */}
           <div>
-            <label className="font-medium text-gray-700">
-              Symptoms
-            </label>
+            <label className="font-medium text-gray-700">Symptoms</label>
 
             <textarea
               className="w-full border rounded px-4 py-3 mt-2 outline-primary"
               rows="4"
               value={symptoms}
-              onChange={(e) =>
-                setSymptoms(e.target.value)
-              }
+              onChange={(e) => setSymptoms(e.target.value)}
               required
             />
           </div>
 
-
           {/* Treatment */}
           <div>
-            <label className="font-medium text-gray-700">
-              Treatment
-            </label>
+            <label className="font-medium text-gray-700">Treatment</label>
 
             <textarea
               className="w-full border rounded px-4 py-3 mt-2 outline-primary"
               rows="4"
               value={treatment}
-              onChange={(e) =>
-                setTreatment(e.target.value)
-              }
+              onChange={(e) => setTreatment(e.target.value)}
               required
             />
           </div>
 
-
           {/* Follow-up */}
           <div>
-
             <label className="font-medium text-gray-700">
               Follow-up Appointment (optional)
             </label>
 
             <div className="flex gap-4 mt-2">
-
               <input
                 type="date"
                 value={followupDate}
-                onChange={(e) =>
-                  setFollowupDate(e.target.value)
-                }
+                onChange={(e) => setFollowupDate(e.target.value)}
                 className="border rounded px-4 py-2 outline-primary"
               />
 
               <input
                 type="time"
                 value={followupTime}
-                onChange={(e) =>
-                  setFollowupTime(e.target.value)
-                }
+                onChange={(e) => setFollowupTime(e.target.value)}
                 className="border rounded px-4 py-2 outline-primary"
               />
-
             </div>
-
           </div>
-
 
           {/* Save Button */}
           <button
@@ -221,19 +180,11 @@ const DoctorMedicalRecord = () => {
           >
             Save & Complete Appointment
           </button>
-
         </form>
-
       </div>
-
     </div>
-
   ) : (
-
-    <div className="m-5 text-gray-500">
-      Loading appointment data...
-    </div>
-
+    <div className="m-5 text-gray-500">Loading appointment data...</div>
   );
 };
 

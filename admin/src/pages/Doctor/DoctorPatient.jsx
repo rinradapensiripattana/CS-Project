@@ -17,7 +17,7 @@ const DoctorPatient = () => {
 
   // เอาเฉพาะ completed
   const completedAppointments = appointments.filter(
-    (item) => item.status === "completed"
+    (item) => item.status === "completed",
   );
 
   // รวม patient ไม่ให้ซ้ำ
@@ -27,22 +27,21 @@ const DoctorPatient = () => {
         acc[item.name] = item;
       }
       return acc;
-    }, {})
+    }, {}),
   );
 
   // search filter
   const filteredPatients = patients.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
+    p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   // history ของ patient ที่เลือก
   const patientHistory = completedAppointments.filter(
-    (item) => item.name === selectedPatient
+    (item) => item.name === selectedPatient,
   );
 
   return (
     <div className="w-full max-w-6xl m-5">
-
       {/* ================= PATIENT LIST ================= */}
 
       {!selectedPatient && (
@@ -63,15 +62,12 @@ const DoctorPatient = () => {
           </div>
 
           <div className="flex flex-col gap-3">
-
             {filteredPatients.map((item, index) => (
-
               <div
                 key={index}
                 onClick={() => setSelectedPatient(item.name)}
                 className="flex items-center gap-4 p-4 bg-white border border-blue-200 rounded-xl shadow-sm cursor-pointer hover:bg-gray-50"
               >
-
                 <img
                   className="w-12 h-12 rounded-full object-cover"
                   src={
@@ -87,17 +83,12 @@ const DoctorPatient = () => {
                     Age: {calculateAge(item.date_of_birth)}
                   </p>
                 </div>
-
               </div>
-
             ))}
 
             {filteredPatients.length === 0 && (
-              <p className="text-gray-500 text-sm mt-4">
-                No patient found.
-              </p>
+              <p className="text-gray-500 text-sm mt-4">No patient found.</p>
             )}
-
           </div>
         </>
       )}
@@ -118,44 +109,36 @@ const DoctorPatient = () => {
           </p>
 
           <div className="flex flex-col gap-4">
-
             {patientHistory.map((item, index) => (
-
               <div
                 key={index}
                 className="bg-white border border-blue-200 rounded-xl p-4 shadow-sm"
               >
-
                 <div className="text-sm text-gray-500 mb-2">
-                  {new Date(item.appointment_date).toLocaleDateString("th-TH")} | {item.appointment_time}
+                  {new Date(item.appointment_date).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}{" "}
+                  | {item.appointment_time.slice(0, 5)}
                 </div>
 
                 <p className="mb-1">
-                  <span className="font-semibold text-gray-700">
-                    Symptom :
-                  </span>
-                  <span className="text-gray-600 ml-1">
-                    {item.symptoms}
-                  </span>
+                  <span className="font-semibold text-gray-700">Symptom :</span>
+                  <span className="text-gray-600 ml-1">{item.symptoms}</span>
                 </p>
 
                 <p>
                   <span className="font-semibold text-gray-700">
                     Treatment :
                   </span>
-                  <span className="text-gray-600 ml-1">
-                    {item.treatment}
-                  </span>
+                  <span className="text-gray-600 ml-1">{item.treatment}</span>
                 </p>
-
               </div>
-
             ))}
-
           </div>
         </>
       )}
-
     </div>
   );
 };

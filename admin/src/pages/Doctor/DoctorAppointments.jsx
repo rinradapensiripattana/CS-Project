@@ -7,12 +7,8 @@ import { assets } from "../../assets/assets";
 const DoctorAppointments = () => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  const {
-    dToken,
-    appointments,
-    getAppointments,
-    cancelAppointment,
-  } = useContext(DoctorContext);
+  const { dToken, appointments, getAppointments, cancelAppointment } =
+    useContext(DoctorContext);
 
   const { calculateAge } = useContext(AppContext);
   const navigate = useNavigate();
@@ -44,7 +40,7 @@ const DoctorAppointments = () => {
 
   // Search
   const filteredBySearch = filteredByStatus.filter((item) =>
-    item.name?.toLowerCase().includes(search.toLowerCase())
+    item.name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   // Date filter
@@ -174,21 +170,21 @@ const DoctorAppointments = () => {
             <p>{calculateAge(item.date_of_birth)}</p>
 
             <p>
-              {new Date(item.appointment_date).toLocaleDateString("th-TH")} ,{" "}
-              {item.appointment_time}
+              {new Date(item.appointment_date).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}{" "}
+              , {item.appointment_time.slice(0, 5)}
             </p>
 
             <div className="flex justify-center gap-2">
               {item.status === "cancelled" && (
-                <p className="text-red-400 text-xs font-medium">
-                  Cancelled
-                </p>
+                <p className="text-red-400 text-xs font-medium">Cancelled</p>
               )}
 
               {item.status === "completed" && (
-                <p className="text-green-500 text-xs font-medium">
-                  Completed
-                </p>
+                <p className="text-green-500 text-xs font-medium">Completed</p>
               )}
 
               {item.status === "confirmed" && (
@@ -206,9 +202,7 @@ const DoctorAppointments = () => {
                   <img
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(
-                        `/doctor-medical-record/${item.appointment_id}`
-                      );
+                      navigate(`/doctor-medical-record/${item.appointment_id}`);
                     }}
                     className="w-8 cursor-pointer"
                     src={assets.tick_icon}

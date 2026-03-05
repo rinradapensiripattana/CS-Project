@@ -17,7 +17,7 @@ const Dashboard = () => {
     const date = new Date(dateString);
 
     return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
+      day: "numeric",
       month: "short",
       year: "numeric",
     });
@@ -85,30 +85,22 @@ const Dashboard = () => {
               />
 
               <div className="flex-1 text-sm">
-                <p className="text-gray-800 font-medium">
-                  {item.doctor_name}
-                </p>
+                <p className="text-gray-800 font-medium">{item.doctor_name}</p>
 
                 <p className="text-gray-600">
-                  Booking on {formatDate(item.appointment_date)} at{" "}
-                  {item.appointment_time}
+                  {formatDate(item.appointment_date)} ,{" "}
+                  {item.appointment_time.slice(0, 5)}
                 </p>
               </div>
 
               {/* Status */}
               {item.status === "cancelled" ? (
-                <p className="text-red-400 text-xs font-medium">
-                  Cancelled
-                </p>
+                <p className="text-red-400 text-xs font-medium">Cancelled</p>
               ) : item.status === "completed" ? (
-                <p className="text-green-500 text-xs font-medium">
-                  Completed
-                </p>
+                <p className="text-green-500 text-xs font-medium">Completed</p>
               ) : (
                 <img
-                  onClick={() =>
-                    cancelAppointment(item.appointment_id)
-                  }
+                  onClick={() => cancelAppointment(item.appointment_id)}
                   className="w-8 cursor-pointer"
                   src={assets.cancel_icon}
                   alt=""

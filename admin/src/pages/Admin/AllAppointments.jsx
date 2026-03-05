@@ -35,42 +35,47 @@ const AllAppointments = () => {
   // format วันที่
   const formatDateTime = (dateString, timeString) => {
     const date = new Date(dateString);
-    return `${date.toLocaleDateString("th-TH")} , ${timeString}`;
+    const formattedDate = date.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    return `${formattedDate} , ${timeString.slice(0, 5)}`;
   };
 
   const filteredAppointments = useMemo(() => {
-    return appointments
-      .filter((item) => getType(item) === activeTab)
+    return (
+      appointments
+        .filter((item) => getType(item) === activeTab)
 
-      // search
-      .filter((item) => {
-        if (!search) return true;
-        return (
-          item.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
-          item.doctor_name?.toLowerCase().includes(search.toLowerCase())
-        );
-      })
+        // search
+        .filter((item) => {
+          if (!search) return true;
+          return (
+            item.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
+            item.doctor_name?.toLowerCase().includes(search.toLowerCase())
+          );
+        })
 
-      // date filter
-      .filter((item) => {
-        const appointmentDate = new Date(item.appointment_date);
+        // date filter
+        .filter((item) => {
+          const appointmentDate = new Date(item.appointment_date);
 
-        if (fromDate && appointmentDate < new Date(fromDate)) return false;
-        if (toDate && appointmentDate > new Date(toDate)) return false;
+          if (fromDate && appointmentDate < new Date(fromDate)) return false;
+          if (toDate && appointmentDate > new Date(toDate)) return false;
 
-        return true;
-      });
+          return true;
+        })
+    );
   }, [appointments, activeTab, search, fromDate, toDate]);
 
   return (
     <div className="w-full max-w-6xl m-5">
-
       {/* Header + Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
         <p className="text-lg font-medium">All Appointments</p>
 
         <div className="flex flex-wrap items-center gap-2">
-
           <input
             type="text"
             placeholder="Search patient or doctor..."
@@ -131,7 +136,6 @@ const AllAppointments = () => {
 
       {/* Table */}
       <div className="border rounded text-sm">
-
         <div className="grid grid-cols-[0.5fr_3fr_3fr_3fr_1fr] py-3 px-6 border-b bg-gray-50 font-medium">
           <p>#</p>
           <p>Patient</p>
@@ -163,10 +167,7 @@ const AllAppointments = () => {
 
             {/* Date */}
             <p>
-              {formatDateTime(
-                item.appointment_date,
-                item.appointment_time
-              )}
+              {formatDateTime(item.appointment_date, item.appointment_time)}
             </p>
 
             {/* Doctor */}
@@ -186,18 +187,12 @@ const AllAppointments = () => {
             {/* Action */}
             <div className="flex justify-center">
               {item.status === "cancelled" ? (
-                <p className="text-red-400 text-xs font-medium">
-                  Cancelled
-                </p>
+                <p className="text-red-400 text-xs font-medium">Cancelled</p>
               ) : item.status === "completed" ? (
-                <p className="text-green-500 text-xs font-medium">
-                  Completed
-                </p>
+                <p className="text-green-500 text-xs font-medium">Completed</p>
               ) : (
                 <img
-                  onClick={() =>
-                    cancelAppointment(item.appointment_id)
-                  }
+                  onClick={() => cancelAppointment(item.appointment_id)}
                   className="w-8 cursor-pointer"
                   src={assets.cancel_icon}
                   alt=""
