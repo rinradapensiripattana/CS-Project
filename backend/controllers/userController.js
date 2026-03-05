@@ -205,7 +205,7 @@ const listAppointment = async (req, res) => {
         JOIN Users u ON d.user_id = u.user_id
         JOIN Patient p ON a.patient_id = p.patient_id
         WHERE p.user_id = ?
-        ORDER BY a.appointment_date ASC, a.appointment_time ASC
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC
       `,
       [userId],
     );
@@ -273,27 +273,54 @@ const bookAppointment = async (req, res) => {
 
     const patientId = patient[0].patient_id;
 
+    // 🔥 Check if patient already has an appointment at this time
+    const [patientConflict] = await db.query(
+      `SELECT * FROM Appointment 
+       WHERE patient_id = ? 
+       AND appointment_date = ? 
+       AND appointment_time = ?
+       AND status != 'cancelled'`,
+      [patientId, appointment_date, appointment_time],
+    );
+
+    if (patientConflict.length > 0) {
+      return res.json({
+        success: false,
+        message: "You already have an appointment at this time",
+      });
+    }
+
     // 🔥 กันจองซ้ำ
     const [existing] = await db.query(
       `SELECT * FROM Appointment 
          WHERE doctor_id = ? 
          AND appointment_date = ? 
-         AND appointment_time = ?
-         AND status != 'cancelled'`,
+         AND appointment_time = ?`,
       [doctor_id, appointment_date, appointment_time],
     );
 
     if (existing.length > 0) {
-      return res.json({
-        success: false,
-        message: "This time slot is already booked",
-      });
+      if (existing[0].status === "cancelled") {
+        await db.query(
+          `UPDATE Appointment SET patient_id = ?, status = 'ongoing' WHERE appointment_id = ?`,
+          [patientId, existing[0].appointment_id],
+        );
+        return res.json({
+          success: true,
+          message: "Appointment booked successfully",
+        });
+      } else {
+        return res.json({
+          success: false,
+          message: "This time slot is already booked",
+        });
+      }
     }
 
     await db.query(
       `INSERT INTO Appointment 
          (doctor_id, patient_id, appointment_date, appointment_time, status)
-         VALUES (?, ?, ?, ?, 'confirmed')`,
+         VALUES (?, ?, ?, ?, 'ongoing')`,
       [doctor_id, patientId, appointment_date, appointment_time],
     );
 
@@ -352,6 +379,7 @@ const getMedicalHistory = async (req, res) => {
           mr.symptom,
           mr.treatment,
           DATE_FORMAT(mr.record_date, '%Y-%m-%d') AS record_date,
+          TIME_FORMAT(a.appointment_time, '%H:%i') AS appointment_time,
           u.name AS doctor_name,
           u.image AS doctor_image
         FROM Medical_Record mr

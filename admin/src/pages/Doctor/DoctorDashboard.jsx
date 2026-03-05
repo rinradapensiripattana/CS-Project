@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { DoctorContext } from "../../context/DoctorContext";
 import { AppContext } from "../../context/AppContext";
 import { assets } from "../../assets/assets";
+import { toast } from "react-toastify";
 
 const DoctorDashboard = () => {
   const { dToken, dashData, getDashData, cancelAppointment } =
@@ -96,7 +97,7 @@ const DoctorDashboard = () => {
               )}
 
               {/* Action Buttons */}
-              {item.status === "confirmed" && (
+              {(item.status === "confirmed" || item.status === "ongoing") && (
                 <div className="flex gap-2">
                   {/* Cancel */}
                   <img
@@ -108,9 +109,26 @@ const DoctorDashboard = () => {
 
                   {/* Go to Medical Record */}
                   <img
-                    onClick={() =>
-                      navigate(`/doctor-medical-record/${item.appointment_id}`)
-                    }
+                    onClick={() => {
+                      const appointmentDateTime = new Date(
+                        item.appointment_date,
+                      );
+                      const [hours, minutes] = item.appointment_time.split(":");
+                      appointmentDateTime.setHours(hours, minutes, 0, 0);
+
+                      // Allow access 30 minutes before the appointment
+                      const allowedTime = new Date(
+                        appointmentDateTime.getTime() - 30 * 60 * 1000,
+                      );
+
+                      if (new Date() < allowedTime) {
+                        toast.error(
+                          "ยังไม่ถึงเวลานัดหมาย",
+                        );
+                        return;
+                      }
+                      navigate(`/doctor-medical-record/${item.appointment_id}`);
+                    }}
                     className="w-8 cursor-pointer"
                     src={assets.tick_icon}
                     alt=""

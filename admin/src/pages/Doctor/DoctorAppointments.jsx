@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { DoctorContext } from "../../context/DoctorContext";
 import { AppContext } from "../../context/AppContext";
 import { assets } from "../../assets/assets";
+import { toast } from "react-toastify";
 
 const DoctorAppointments = () => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -17,6 +18,7 @@ const DoctorAppointments = () => {
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   useEffect(() => {
     if (dToken) {
@@ -28,11 +30,13 @@ const DoctorAppointments = () => {
     setSearch("");
     setFromDate("");
     setToDate("");
+    setSortOrder("desc");
   };
 
   // Filter by status
   const filteredByStatus = appointments.filter((item) => {
-    if (activeTab === "upcoming") return item.status === "confirmed";
+    if (activeTab === "upcoming")
+      return item.status === "confirmed" || item.status === "ongoing";
     if (activeTab === "completed") return item.status === "completed";
     if (activeTab === "cancelled") return item.status === "cancelled";
     return true;
@@ -64,7 +68,7 @@ const DoctorAppointments = () => {
     dateA.setHours(hourA, minuteA, 0);
     dateB.setHours(hourB, minuteB, 0);
 
-    return dateA - dateB;
+    return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
   });
 
   return (
@@ -80,6 +84,16 @@ const DoctorAppointments = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-1 rounded text-sm w-48"
           />
+
+          {/* Sort */}
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="border px-2 py-1 rounded text-sm"
+          >
+            <option value="desc">Latest</option>
+            <option value="asc">Oldest</option>
+          </select>
 
           {/* From */}
           <div className="flex items-center gap-1">
@@ -152,7 +166,9 @@ const DoctorAppointments = () => {
             key={item.appointment_id}
             className="grid grid-cols-[0.5fr_2fr_1fr_2fr_1fr] gap-2 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50"
           >
-            <p>{index + 1}</p>
+            <p>
+              {sortOrder === "desc" ? finalFiltered.length - index : index + 1}
+            </p>
 
             <div className="flex items-center gap-2">
               <img
@@ -187,7 +203,7 @@ const DoctorAppointments = () => {
                 <p className="text-green-500 text-xs font-medium">Completed</p>
               )}
 
-              {item.status === "confirmed" && (
+              {(item.status === "confirmed" || item.status === "ongoing") && (
                 <>
                   <img
                     onClick={(e) => {
@@ -202,6 +218,21 @@ const DoctorAppointments = () => {
                   <img
                     onClick={(e) => {
                       e.stopPropagation();
+                      const appointmentDateTime = new Date(
+                        item.appointment_date,
+                      );
+                      const [hours, minutes] = item.appointment_time.split(":");
+                      appointmentDateTime.setHours(hours, minutes, 0, 0);
+
+                      // Allow access 30 minutes before the appointment
+                      const allowedTime = new Date(
+                        appointmentDateTime.getTime() - 30 * 60 * 1000,
+                      );
+
+                      if (new Date() < allowedTime) {
+                        toast.error("ยังไม่ถึงเวลานัดหมาย");
+                        return;
+                      }
                       navigate(`/doctor-medical-record/${item.appointment_id}`);
                     }}
                     className="w-8 cursor-pointer"

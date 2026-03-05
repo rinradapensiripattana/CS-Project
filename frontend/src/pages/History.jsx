@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
 
@@ -6,6 +6,7 @@ const History = () => {
   const { axiosInstance, token, backendUrl } = useContext(AppContext);
   const [historyData, setHistoryData] = useState([]);
   const [filterDate, setFilterDate] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -33,16 +34,33 @@ const History = () => {
     }
   }, [token]);
 
-  const filteredHistory = historyData.filter((item) => {
-    if (!filterDate) return true;
-    return item.record_date === filterDate;
-  });
+  const filteredHistory = useMemo(() => {
+    return historyData
+      .filter((item) => {
+        if (!filterDate) return true;
+        return item.record_date === filterDate;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(`${a.record_date}T${a.appointment_time}`);
+        const dateB = new Date(`${b.record_date}T${b.appointment_time}`);
+        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+      });
+  }, [historyData, filterDate, sortOrder]);
 
   return (
     <div>
       <div className="flex justify-between items-center pb-3 border-b">
         <p className="font-medium text-zinc-700">Medical History</p>
         <div className="flex items-center gap-2">
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="border rounded px-2 py-1 text-sm text-black"
+          >
+            <option value="desc">Latest</option>
+            <option value="asc">Oldest</option>
+          </select>
+
           <input
             type="date"
             className="border rounded px-2 py-1 text-sm text-black"
@@ -68,7 +86,6 @@ const History = () => {
           >
             {/* Header */}
             <div className="flex justify-between items-center">
-              
               {/* Doctor */}
               <div className="flex items-center gap-3">
                 <img
@@ -87,7 +104,7 @@ const History = () => {
 
               {/* Date */}
               <p className="text-sm text-gray-500 font-medium">
-                {formatDate(item.record_date)}
+                {formatDate(item.record_date)} | {item.appointment_time}
               </p>
             </div>
 

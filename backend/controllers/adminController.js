@@ -136,7 +136,7 @@ const appointmentsAdmin = async (req, res) => {
         LEFT JOIN Doctor d ON a.doctor_id = d.doctor_id
         LEFT JOIN Users du ON d.user_id = du.user_id
   
-        ORDER BY a.appointment_date ASC, a.appointment_time ASC
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC
       `);
 
     res.json({ success: true, appointments });
@@ -275,24 +275,51 @@ const createAppointment = async (req, res) => {
         ? `${appointment_time}:00`
         : appointment_time;
 
+    // 🔥 Check if patient already has an appointment at this time
+    const [patientConflict] = await db.execute(
+      `SELECT * FROM Appointment 
+       WHERE patient_id = ? 
+       AND appointment_date = ? 
+       AND appointment_time = ?
+       AND status != 'cancelled'`,
+      [patient_id, appointment_date, formattedTime],
+    );
+
+    if (patientConflict.length > 0) {
+      return res.json({
+        success: false,
+        message: "The patient already has an appointment at this time",
+      });
+    }
+
     const [existing] = await db.execute(
       `SELECT * FROM Appointment 
              WHERE doctor_id = ? 
              AND appointment_date = ? 
-             AND appointment_time = ?
-             AND status != 'cancelled'`,
+             AND appointment_time = ?`,
       [doctor_id, appointment_date, formattedTime],
     );
 
     if (existing.length > 0) {
-      return res.json({
-        success: false,
-        message: "This time slot is already booked for the selected doctor.",
-      });
+      if (existing[0].status === "cancelled") {
+        await db.execute(
+          `UPDATE Appointment SET patient_id = ?, status = 'ongoing' WHERE appointment_id = ?`,
+          [patient_id, existing[0].appointment_id],
+        );
+        return res.json({
+          success: true,
+          message: "Appointment created successfully",
+        });
+      } else {
+        return res.json({
+          success: false,
+          message: "This time slot is already booked for the selected doctor.",
+        });
+      }
     }
 
     await db.execute(
-      `INSERT INTO Appointment (doctor_id, patient_id, appointment_date, appointment_time, status) VALUES (?, ?, ?, ?, 'confirmed')`,
+      `INSERT INTO Appointment (doctor_id, patient_id, appointment_date, appointment_time, status) VALUES (?, ?, ?, ?, 'ongoing')`,
       [doctor_id, patient_id, appointment_date, formattedTime],
     );
 

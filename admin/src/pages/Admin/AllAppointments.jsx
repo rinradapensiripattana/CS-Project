@@ -8,6 +8,7 @@ const AllAppointments = () => {
 
   const [activeTab, setActiveTab] = useState("upcoming");
   const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   // date filter
   const [fromDate, setFromDate] = useState("");
@@ -23,6 +24,7 @@ const AllAppointments = () => {
     setSearch("");
     setFromDate("");
     setToDate("");
+    setSortOrder("desc");
   };
 
   // แยกประเภทตาม status จาก SQL
@@ -44,30 +46,41 @@ const AllAppointments = () => {
   };
 
   const filteredAppointments = useMemo(() => {
-    return (
-      appointments
-        .filter((item) => getType(item) === activeTab)
+    let filtered = appointments
+      .filter((item) => getType(item) === activeTab)
 
-        // search
-        .filter((item) => {
-          if (!search) return true;
-          return (
-            item.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
-            item.doctor_name?.toLowerCase().includes(search.toLowerCase())
-          );
-        })
+      // search
+      .filter((item) => {
+        if (!search) return true;
+        return (
+          item.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
+          item.doctor_name?.toLowerCase().includes(search.toLowerCase())
+        );
+      })
 
-        // date filter
-        .filter((item) => {
-          const appointmentDate = new Date(item.appointment_date);
+      // date filter
+      .filter((item) => {
+        const appointmentDate = new Date(item.appointment_date);
 
-          if (fromDate && appointmentDate < new Date(fromDate)) return false;
-          if (toDate && appointmentDate > new Date(toDate)) return false;
+        if (fromDate && appointmentDate < new Date(fromDate)) return false;
+        if (toDate && appointmentDate > new Date(toDate)) return false;
 
-          return true;
-        })
-    );
-  }, [appointments, activeTab, search, fromDate, toDate]);
+        return true;
+      });
+
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.appointment_date);
+      const dateB = new Date(b.appointment_date);
+
+      const [hourA, minuteA] = a.appointment_time.split(":");
+      const [hourB, minuteB] = b.appointment_time.split(":");
+
+      dateA.setHours(hourA, minuteA, 0);
+      dateB.setHours(hourB, minuteB, 0);
+
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
+  }, [appointments, activeTab, search, fromDate, toDate, sortOrder]);
 
   return (
     <div className="w-full max-w-6xl m-5">
@@ -83,6 +96,16 @@ const AllAppointments = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-1 rounded text-sm w-48"
           />
+
+          {/* Sort */}
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            className="border px-2 py-1 rounded text-sm"
+          >
+            <option value="desc">Latest</option>
+            <option value="asc">Oldest</option>
+          </select>
 
           {/* From */}
           <div className="flex items-center gap-1">
@@ -149,7 +172,11 @@ const AllAppointments = () => {
             key={item.appointment_id}
             className="grid grid-cols-[0.5fr_3fr_3fr_3fr_1fr] items-center text-gray-600 py-3 px-6 border-b hover:bg-gray-50"
           >
-            <p>{index + 1}</p>
+            <p>
+              {sortOrder === "desc"
+                ? filteredAppointments.length - index
+                : index + 1}
+            </p>
 
             {/* Patient */}
             <div className="flex items-center gap-2">
