@@ -275,6 +275,19 @@ const createAppointment = async (req, res) => {
         ? `${appointment_time}:00`
         : appointment_time;
 
+    // Check if doctor is available
+    const [doctorStatus] = await db.execute(
+      "SELECT available FROM Doctor WHERE doctor_id = ?",
+      [doctor_id],
+    );
+
+    if (!doctorStatus.length || doctorStatus[0].available !== 1) {
+      return res.json({
+        success: false,
+        message: "Selected doctor is not available",
+      });
+    }
+
     // 🔥 Check if patient already has an appointment at this time
     const [patientConflict] = await db.execute(
       `SELECT * FROM Appointment 

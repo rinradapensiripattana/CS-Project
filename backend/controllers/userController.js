@@ -262,6 +262,19 @@ const bookAppointment = async (req, res) => {
     const { doctor_id, appointment_date, appointment_time } = req.body;
     const userId = req.user.userId;
 
+    // Check if doctor is available
+    const [doctorStatus] = await db.query(
+      "SELECT available FROM Doctor WHERE doctor_id = ?",
+      [doctor_id],
+    );
+
+    if (!doctorStatus.length || doctorStatus[0].available !== 1) {
+      return res.json({
+        success: false,
+        message: "Doctor is not available for booking",
+      });
+    }
+
     const [patient] = await db.query(
       "SELECT patient_id FROM Patient WHERE user_id = ?",
       [userId],

@@ -167,6 +167,20 @@ const appointmentComplete = async (req, res) => {
 
     // 5️⃣ create follow-up appointment
     if (followup_date && followup_time) {
+      // Check if doctor is available before creating follow-up
+      const [doctorStatus] = await db.query(
+        "SELECT available FROM Doctor WHERE doctor_id = ?",
+        [appointment.doctor_id],
+      );
+
+      if (!doctorStatus.length || doctorStatus[0].available !== 1) {
+        return res.json({
+          success: false,
+          message:
+            "You are currently set to 'Not Available', cannot create a follow-up.",
+        });
+      }
+
       // 🔥 Check if patient already has an appointment at this time
       const [patientConflict] = await db.query(
         `SELECT * FROM Appointment 
