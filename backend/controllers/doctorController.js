@@ -2,6 +2,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import db from "../config/mysql.js";
 import { v2 as cloudinary } from "cloudinary";
+import * as line from "@line/bot-sdk";
+
+const lineClient = new line.Client({
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
+});
 
 // API for doctor Login
 const loginDoctor = async (req, res) => {
@@ -96,6 +101,7 @@ const appointmentsDoctor = async (req, res) => {
 // API to complete appointment + save medical record
 const appointmentComplete = async (req, res) => {
   try {
+
     const userId = req.doctor.id;
 
     const {
@@ -103,16 +109,19 @@ const appointmentComplete = async (req, res) => {
       symptoms,
       treatment,
       followup_date,
-      followup_time,
+      followup_time
     } = req.body;
 
+    // =========================
     // 1️⃣ หา doctor_id
+    // =========================
+
     const [doctor] = await db.query(
       "SELECT doctor_id FROM Doctor WHERE user_id = ?",
-      [userId],
+      [userId]
     );
 
-    if (doctor.length === 0) {
+    if (!doctor.length) {
       return res.json({
         success: false,
         message: "Doctor not found",
@@ -121,13 +130,16 @@ const appointmentComplete = async (req, res) => {
 
     const doctorId = doctor[0].doctor_id;
 
-    // 2️⃣ เช็คว่า appointment เป็นของหมอจริง
+    // =========================
+    // 2️⃣ เช็ค appointment
+    // =========================
+
     const [check] = await db.query(
       "SELECT * FROM Appointment WHERE appointment_id = ? AND doctor_id = ?",
-      [appointment_id, doctorId],
+      [appointment_id, doctorId]
     );
 
-    if (check.length === 0) {
+    if (!check.length) {
       return res.json({
         success: false,
         message: "Unauthorized",
@@ -136,42 +148,53 @@ const appointmentComplete = async (req, res) => {
 
     const appointment = check[0];
 
-    // 3️⃣ เช็คว่ามี Medical_Record แล้วหรือยัง
+    // =========================
+    // 3️⃣ save medical record
+    // =========================
+
     const [record] = await db.query(
       "SELECT * FROM Medical_Record WHERE appointment_id = ?",
-      [appointment_id],
+      [appointment_id]
     );
 
     if (record.length > 0) {
-      // update record
+
       await db.query(
         `UPDATE Medical_Record
-           SET symptom = ?, treatment = ?, record_date = NOW()
-           WHERE appointment_id = ?`,
-        [symptoms, treatment, appointment_id],
+         SET symptom = ?, treatment = ?, record_date = NOW()
+         WHERE appointment_id = ?`,
+        [symptoms, treatment, appointment_id]
       );
+
     } else {
-      // insert record
+
       await db.query(
         `INSERT INTO Medical_Record
-           (appointment_id, symptom, treatment, record_date)
-           VALUES (?, ?, ?, NOW())`,
-        [appointment_id, symptoms, treatment],
+         (appointment_id, symptom, treatment, record_date)
+         VALUES (?, ?, ?, NOW())`,
+        [appointment_id, symptoms, treatment]
       );
+
     }
 
-    // 4️⃣ update appointment status
+    // =========================
+    // 4️⃣ update status completed
+    // =========================
+
     await db.query(
       "UPDATE Appointment SET status = 'completed' WHERE appointment_id = ?",
-      [appointment_id],
+      [appointment_id]
     );
 
-    // 5️⃣ create follow-up appointment
+    // =========================
+    // 5️⃣ follow-up appointment
+    // =========================
+
     if (followup_date && followup_time) {
-      // Check if doctor is available before creating follow-up
+
       const [doctorStatus] = await db.query(
         "SELECT available FROM Doctor WHERE doctor_id = ?",
-        [appointment.doctor_id],
+        [appointment.doctor_id]
       );
 
       if (!doctorStatus.length || doctorStatus[0].available !== 1) {
@@ -182,14 +205,13 @@ const appointmentComplete = async (req, res) => {
         });
       }
 
-      // 🔥 Check if patient already has an appointment at this time
       const [patientConflict] = await db.query(
-        `SELECT * FROM Appointment 
-         WHERE patient_id = ? 
-         AND appointment_date = ? 
+        `SELECT * FROM Appointment
+         WHERE patient_id = ?
+         AND appointment_date = ?
          AND appointment_time = ?
          AND status != 'cancelled'`,
-        [appointment.patient_id, followup_date, followup_time],
+        [appointment.patient_id, followup_date, followup_time]
       );
 
       if (patientConflict.length > 0) {
@@ -199,53 +221,148 @@ const appointmentComplete = async (req, res) => {
         });
       }
 
-      // 🔥 เช็คว่ามีนัดหมายเดิมหรือไม่ (ป้องกัน Duplicate entry)
       const [existing] = await db.query(
-        `SELECT * FROM Appointment 
-           WHERE doctor_id = ? 
-           AND appointment_date = ? 
-           AND appointment_time = ?`,
-        [appointment.doctor_id, followup_date, followup_time],
+        `SELECT * FROM Appointment
+         WHERE doctor_id = ?
+         AND appointment_date = ?
+         AND appointment_time = ?`,
+        [appointment.doctor_id, followup_date, followup_time]
       );
 
       if (existing.length > 0) {
+
         if (existing[0].status === "cancelled") {
-          // ถ้ามีและเป็น cancelled ให้ update กลับมาใช้ใหม่
+
           await db.query(
-            `UPDATE Appointment SET patient_id = ?, status = 'ongoing' WHERE appointment_id = ?`,
-            [appointment.patient_id, existing[0].appointment_id],
+            `UPDATE Appointment
+             SET patient_id = ?, status = 'confirmed'
+             WHERE appointment_id = ?`,
+            [appointment.patient_id, existing[0].appointment_id]
           );
+
         } else {
+
           return res.json({
             success: false,
             message: "Follow-up time slot is already booked",
           });
+
         }
+
       } else {
-        // ถ้าไม่มี ให้ insert ใหม่
+
         await db.query(
-          `INSERT INTO Appointment (patient_id, doctor_id, appointment_date, appointment_time, status) VALUES (?, ?, ?, ?, 'ongoing')`,
+          `INSERT INTO Appointment
+           (patient_id, doctor_id, appointment_date, appointment_time, status)
+           VALUES (?, ?, ?, ?, 'confirmed')`,
           [
             appointment.patient_id,
             appointment.doctor_id,
             followup_date,
             followup_time,
-          ],
+          ]
         );
+
       }
+
+      // =========================
+      // 🔔 LINE FOLLOW-UP NOTIFICATION
+      // =========================
+
+      const [patient] = await db.query(
+        "SELECT line_user_id FROM Patient WHERE patient_id = ?",
+        [appointment.patient_id]
+      );
+
+      const lineUserId = patient[0]?.line_user_id;
+
+      if (lineUserId) {
+
+        const [doctorName] = await db.query(
+          `SELECT u.name
+           FROM Doctor d
+           JOIN Users u ON d.user_id = u.user_id
+           WHERE d.doctor_id = ?`,
+          [appointment.doctor_id]
+        );
+
+        const name = doctorName[0]?.name || "Doctor";
+
+        await lineClient.pushMessage(lineUserId, {
+          type: "flex",
+          altText: "มีการนัดหมายติดตามอาการ",
+          contents: {
+            type: "bubble",
+            body: {
+              type: "box",
+              layout: "vertical",
+              contents: [
+                {
+                  type: "text",
+                  text: "📅 นัดหมายติดตามอาการ",
+                  weight: "bold",
+                  size: "xl"
+                },
+                {
+                  type: "separator",
+                  margin: "md"
+                },
+                {
+                  type: "text",
+                  text: `👨‍⚕️ แพทย์: ${name}`,
+                  margin: "lg"
+                },
+                {
+                  type: "text",
+                  text: `📆 วันที่: ${followup_date}`
+                },
+                {
+                  type: "text",
+                  text: `⏰ เวลา: ${followup_time}`
+                },
+              ]
+            },
+            footer: {
+              type: "box",
+              layout: "vertical",
+              margin: "lg",
+              contents: [
+                {
+                  type: "separator"
+                },
+                {
+                  type: "text",
+                  text: "🏥 HelloDoctor Clinic",
+                  align: "center",
+                  size: "sm",
+                  color: "#888888",
+                  margin: "md"
+                }
+              ]
+            }
+          }
+          
+        });
+        
+
+      }
+
     }
 
     res.json({
       success: true,
       message: "Appointment Completed",
     });
+
   } catch (error) {
+
     console.log(error);
 
     res.json({
       success: false,
       message: error.message,
     });
+
   }
 };
 
@@ -419,41 +536,143 @@ const doctorDashboard = async (req, res) => {
 
 const appointmentCancel = async (req, res) => {
   try {
-    const userId = req.doctor.id;
-    const { appointment_id } = req.body;
+
+    const userId = req.doctor.id
+    const { appointment_id } = req.body
 
     // หา doctor_id จาก user_id
     const [doctor] = await db.query(
       "SELECT doctor_id FROM Doctor WHERE user_id = ?",
-      [userId],
-    );
+      [userId]
+    )
 
     if (!doctor.length) {
       return res.json({
         success: false,
-        message: "Doctor not found",
-      });
+        message: "Doctor not found"
+      })
     }
 
-    const doctorId = doctor[0].doctor_id;
+    const doctorId = doctor[0].doctor_id
+
+    // ดึงข้อมูลการนัด
+    const [rows] = await db.query(`
+      SELECT 
+        a.appointment_date,
+        a.appointment_time,
+        p.line_user_id,
+        u.name AS doctor_name
+      FROM Appointment a
+      JOIN Patient p ON a.patient_id = p.patient_id
+      JOIN Doctor d ON a.doctor_id = d.doctor_id
+      JOIN Users u ON d.user_id = u.user_id
+      WHERE a.appointment_id = ?
+    `,[appointment_id])
+
+    if (!rows.length) {
+      return res.json({
+        success:false,
+        message:"Appointment not found"
+      })
+    }
+
+    const data = rows[0]
+
+    // format วันที่
+    const date = new Date(data.appointment_date)
+
+    const formattedDate = date.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    })
+
+    // format เวลา
+    const formattedTime = data.appointment_time.slice(0,5)
 
     // update status
     await db.query(
       "UPDATE Appointment SET status = 'cancelled' WHERE appointment_id = ? AND doctor_id = ?",
-      [appointment_id, doctorId],
-    );
+      [appointment_id, doctorId]
+    )
+
+    // =====================
+    // 🔔 LINE NOTIFICATION
+    // =====================
+
+    if (data.line_user_id) {
+
+      await lineClient.pushMessage(data.line_user_id, {
+        type: "flex",
+        altText: "การนัดหมายถูกยกเลิก",
+        contents: {
+          type: "bubble",
+          body: {
+            type: "box",
+            layout: "vertical",
+            spacing: "md",
+            contents: [
+              {
+                type: "text",
+                text: "⚠️ การนัดหมายถูกยกเลิกโดยแพทย์",
+                weight: "bold",
+                //size: "sm",
+                wrap: true
+              },
+              {
+                type: "separator"
+              },
+              {
+                type: "text",
+                text: `👨‍⚕️ แพทย์: ${data.doctor_name}`,
+                wrap: true
+              },
+              {
+                type: "text",
+                text: `📅 วันที่: ${formattedDate}`,
+                wrap: true
+              },
+              {
+                type: "text",
+                text: `⏰ เวลา: ${formattedTime}`,
+                wrap: true
+              }
+            ]
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              {
+                type: "separator"
+              },
+              {
+                type: "text",
+                text: "🏥 HelloDoctor Clinic",
+                align: "center",
+                size: "sm",
+                color: "#888888",
+                margin: "md"
+              }
+            ]
+          }
+        }
+      })
+
+    }
 
     res.json({
       success: true,
-      message: "Appointment Cancelled",
-    });
+      message: "Appointment Cancelled"
+    })
+
   } catch (error) {
     res.json({
       success: false,
-      message: error.message,
-    });
+      message: error.message
+    })
   }
-};
+}
 
 export {
   loginDoctor,

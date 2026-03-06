@@ -3,6 +3,11 @@ import bcrypt from "bcrypt";
 import validator from "validator";
 import { v2 as cloudinary } from "cloudinary";
 import db from "../config/mysql.js";
+import * as line from "@line/bot-sdk";
+
+const lineClient = new line.Client({
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
+});
 
 // =======================
 // Add Doctor (SQL Version)
@@ -156,24 +161,128 @@ const appointmentsAdmin = async (req, res) => {
 
 const appointmentCancel = async (req, res) => {
   try {
-    const { id } = req.body; // 🔥 รับชื่อ id
 
-    await db.execute(
-      "UPDATE Appointment SET status = 'cancelled' WHERE appointment_id = ?",
-      [id],
-    );
+      const { id } = req.body
 
-    res.json({
-      success: true,
-      message: "Appointment Cancelled",
-    });
+      // ดึงข้อมูลการนัด
+      const [rows] = await db.execute(`
+          SELECT 
+              a.appointment_date,
+              a.appointment_time,
+              u.name AS doctor_name,
+              p.line_user_id
+          FROM Appointment a
+          JOIN Doctor d ON a.doctor_id = d.doctor_id
+          JOIN Users u ON d.user_id = u.user_id
+          JOIN Patient p ON a.patient_id = p.patient_id
+          WHERE a.appointment_id = ?
+      `,[id])
+
+      if(!rows.length){
+          return res.json({
+              success:false,
+              message:"Appointment not found"
+          })
+      }
+
+      const data = rows[0]
+
+      const formattedDate = new Date(data.appointment_date).toLocaleDateString("th-TH",{
+          year:"numeric",
+          month:"long",
+          day:"numeric"
+      })
+
+      const formattedTime = data.appointment_time.slice(0,5)
+
+      // update status
+      await db.execute(
+          "UPDATE Appointment SET status = 'cancelled' WHERE appointment_id = ?",
+          [id]
+      )
+
+      // =====================
+      // 🔔 LINE NOTIFICATION
+      // =====================
+
+      if(data.line_user_id){
+
+          await lineClient.pushMessage(data.line_user_id,{
+              type:"flex",
+              altText:"การนัดหมายถูกยกเลิก",
+              contents:{
+                  type:"bubble",
+                  body:{
+                      type:"box",
+                      layout:"vertical",
+                      contents:[
+                          {
+                              type:"text",
+                              text:"❌ การนัดหมายถูกยกเลิกโดยคลินิก",
+                              weight:"bold",
+                              //size:"xl"
+                          },
+                          {
+                              type:"separator",
+                              margin:"md"
+                          },
+                          {
+                              type:"box",
+                              layout:"vertical",
+                              margin:"lg",
+                              spacing:"sm",
+                              contents:[
+                                  {
+                                      type:"text",
+                                      text:`👨‍⚕️ แพทย์: ${data.doctor_name}`
+                                  },
+                                  {
+                                      type:"text",
+                                      text:`📆 วันที่: ${formattedDate}`
+                                  },
+                                  {
+                                      type:"text",
+                                      text:`⏰ เวลา: ${formattedTime}`
+                                  }
+                              ]
+                          }
+                      ]
+                  },
+                  footer:{
+                      type:"box",
+                      layout:"vertical",
+                      margin:"lg",
+                      contents:[
+                          {
+                              type:"separator"
+                          },
+                          {
+                              type:"text",
+                              text:"🏥 HelloDoctor Clinic",
+                              align:"center",
+                              size:"sm",
+                              color:"#888888",
+                              margin:"md"
+                          }
+                      ]
+                  }
+              }
+          })
+
+      }
+
+      res.json({
+          success:true,
+          message:"Appointment Cancelled"
+      })
+
   } catch (error) {
-    res.json({
-      success: false,
-      message: error.message,
-    });
+      res.json({
+          success:false,
+          message:error.message
+      })
   }
-};
+}
 
 // =======================
 // Dashboard Data
@@ -267,23 +376,33 @@ const getAllPatients = async (req, res) => {
 // =======================
 const createAppointment = async (req, res) => {
   try {
+
     const { doctor_id, patient_id, appointment_date, appointment_time } =
       req.body;
 
     if (!doctor_id || !patient_id || !appointment_date || !appointment_time) {
-      return res.json({ success: false, message: "All fields are required." });
+      return res.json({
+        success: false,
+        message: "All fields are required.",
+      });
     }
 
-    // Ensure time format is HH:mm:ss
+    // =========================
+    // FORMAT TIME
+    // =========================
+
     const formattedTime =
       appointment_time.length === 5
         ? `${appointment_time}:00`
         : appointment_time;
 
-    // Check if doctor is available
+    // =========================
+    // CHECK DOCTOR AVAILABLE
+    // =========================
+
     const [doctorStatus] = await db.execute(
       "SELECT available FROM Doctor WHERE doctor_id = ?",
-      [doctor_id],
+      [doctor_id]
     );
 
     if (!doctorStatus.length || doctorStatus[0].available !== 1) {
@@ -293,14 +412,17 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    // 🔥 Check if patient already has an appointment at this time
+    // =========================
+    // CHECK PATIENT CONFLICT
+    // =========================
+
     const [patientConflict] = await db.execute(
       `SELECT * FROM Appointment 
-       WHERE patient_id = ? 
-       AND appointment_date = ? 
+       WHERE patient_id = ?
+       AND appointment_date = ?
        AND appointment_time = ?
        AND status != 'cancelled'`,
-      [patient_id, appointment_date, formattedTime],
+      [patient_id, appointment_date, formattedTime]
     );
 
     if (patientConflict.length > 0) {
@@ -310,40 +432,152 @@ const createAppointment = async (req, res) => {
       });
     }
 
+    // =========================
+    // CHECK DOCTOR SLOT
+    // =========================
+
     const [existing] = await db.execute(
       `SELECT * FROM Appointment 
-             WHERE doctor_id = ? 
-             AND appointment_date = ? 
-             AND appointment_time = ?`,
-      [doctor_id, appointment_date, formattedTime],
+       WHERE doctor_id = ?
+       AND appointment_date = ?
+       AND appointment_time = ?`,
+      [doctor_id, appointment_date, formattedTime]
     );
 
     if (existing.length > 0) {
+
+      // 🔹 reuse slot ถ้าเคย cancel
       if (existing[0].status === "cancelled") {
+
         await db.execute(
-          `UPDATE Appointment SET patient_id = ?, status = 'ongoing' WHERE appointment_id = ?`,
-          [patient_id, existing[0].appointment_id],
+          `UPDATE Appointment
+           SET patient_id = ?, status = 'confirmed'
+           WHERE appointment_id = ?`,
+          [patient_id, existing[0].appointment_id]
         );
-        return res.json({
-          success: true,
-          message: "Appointment created successfully",
-        });
+
       } else {
+
         return res.json({
           success: false,
           message: "This time slot is already booked for the selected doctor.",
         });
+
       }
+
+    } else {
+
+      // =========================
+      // INSERT NEW APPOINTMENT
+      // =========================
+
+      await db.execute(
+        `INSERT INTO Appointment 
+         (doctor_id, patient_id, appointment_date, appointment_time, status)
+         VALUES (?, ?, ?, ?, 'confirmed')`,
+        [doctor_id, patient_id, appointment_date, formattedTime]
+      );
+
     }
 
-    await db.execute(
-      `INSERT INTO Appointment (doctor_id, patient_id, appointment_date, appointment_time, status) VALUES (?, ?, ?, ?, 'ongoing')`,
-      [doctor_id, patient_id, appointment_date, formattedTime],
+    // =========================
+    // 🔔 LINE NOTIFICATION
+    // =========================
+
+    const [patient] = await db.execute(
+      "SELECT line_user_id FROM Patient WHERE patient_id = ?",
+      [patient_id]
     );
 
-    res.json({ success: true, message: "Appointment created successfully" });
+    const lineUserId = patient[0]?.line_user_id;
+
+    if (lineUserId) {
+
+      const [doctor] = await db.execute(
+        `SELECT u.name
+         FROM Doctor d
+         JOIN Users u ON d.user_id = u.user_id
+         WHERE d.doctor_id = ?`,
+        [doctor_id]
+      );
+
+      const doctorName = doctor[0]?.name || "Doctor";
+
+      await lineClient.pushMessage(lineUserId, {
+        type: "flex",
+        altText: "มีการนัดหมายใหม่",
+        contents: {
+          type: "bubble",
+          body: {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              {
+                type: "text",
+                text: "📅 มีการนัดหมายใหม่",
+                weight: "bold",
+                size: "xl"
+              },
+              {
+                type: "separator",
+                margin: "md"
+              },
+              {
+                type: "text",
+                text: `👨‍⚕️ แพทย์: ${doctorName}`,
+                margin: "lg"
+              },
+              {
+                type: "text",
+                text: `📆 วันที่: ${appointment_date}`
+              },
+              {
+                type: "text",
+                text: `⏰ เวลา: ${formattedTime.substring(0,5)}`
+              }
+            ]
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            contents: [
+              {
+                type: "separator"
+              },
+              {
+                type: "text",
+                text: "🏥 HelloDoctor Clinic",
+                align: "center",
+                size: "sm",
+                color: "#888888",
+                margin: "md"
+              }
+            ]
+          }
+        }
+      });
+
+    }
+
+    // =========================
+    // SUCCESS RESPONSE
+    // =========================
+
+    res.json({
+      success: true,
+      message: "Appointment created successfully",
+    });
+
   } catch (error) {
-    res.json({ success: false, message: error.message });
+
+    console.log("Create Appointment Error:", error);
+
+    res.json({
+      success: false,
+      message: error.message,
+    });
+
   }
 };
 
