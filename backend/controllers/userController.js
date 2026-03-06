@@ -256,20 +256,17 @@ const cancelAppointment = async (req, res) => {
 };
 
 // =====================================================
-// 🔹 BOOK APPOINTMENT (แก้ date format แล้ว)
-// =====================================================
-// =====================================================
-// 🔹 BOOK APPOINTMENT (FINAL FIX)
+// 🔹 BOOK APPOINTMENT (FIXED FOR ENUM STATUS)
 // =====================================================
 const bookAppointment = async (req, res) => {
   try {
     const { doctor_id, appointment_date, appointment_time } = req.body;
     const userId = req.user.userId;
 
-    // Check if doctor is available
+    // 🔹 Check doctor availability
     const [doctorStatus] = await db.query(
       "SELECT available FROM Doctor WHERE doctor_id = ?",
-      [doctor_id],
+      [doctor_id]
     );
 
     if (!doctorStatus.length || doctorStatus[0].available !== 1) {
@@ -279,25 +276,29 @@ const bookAppointment = async (req, res) => {
       });
     }
 
+    // 🔹 Get patient_id
     const [patient] = await db.query(
       "SELECT patient_id FROM Patient WHERE user_id = ?",
-      [userId],
+      [userId]
     );
 
     if (!patient.length) {
-      return res.json({ success: false, message: "Patient not found" });
+      return res.json({
+        success: false,
+        message: "Patient not found",
+      });
     }
 
     const patientId = patient[0].patient_id;
 
-    // 🔥 Check if patient already has an appointment at this time
+    // 🔹 Check if patient already booked this time
     const [patientConflict] = await db.query(
       `SELECT * FROM Appointment 
-       WHERE patient_id = ? 
-       AND appointment_date = ? 
+       WHERE patient_id = ?
+       AND appointment_date = ?
        AND appointment_time = ?
        AND status != 'cancelled'`,
-      [patientId, appointment_date, appointment_time],
+      [patientId, appointment_date, appointment_time]
     );
 
     if (patientConflict.length > 0) {
@@ -307,44 +308,62 @@ const bookAppointment = async (req, res) => {
       });
     }
 
-    // 🔥 กันจองซ้ำ
+    // 🔹 Check if doctor slot already booked
     const [existing] = await db.query(
-      `SELECT * FROM Appointment 
-         WHERE doctor_id = ? 
-         AND appointment_date = ? 
-         AND appointment_time = ?`,
-      [doctor_id, appointment_date, appointment_time],
+      `SELECT * FROM Appointment
+       WHERE doctor_id = ?
+       AND appointment_date = ?
+       AND appointment_time = ?`,
+      [doctor_id, appointment_date, appointment_time]
     );
 
     if (existing.length > 0) {
+
+      // ถ้า slot เคยถูก cancel → reuse slot
       if (existing[0].status === "cancelled") {
+
         await db.query(
-          `UPDATE Appointment SET patient_id = ?, status = 'ongoing' WHERE appointment_id = ?`,
-          [patientId, existing[0].appointment_id],
+          `UPDATE Appointment
+           SET patient_id = ?, status = 'confirmed'
+           WHERE appointment_id = ?`,
+          [patientId, existing[0].appointment_id]
         );
+
         return res.json({
           success: true,
           message: "Appointment booked successfully",
         });
+
       } else {
+
         return res.json({
           success: false,
           message: "This time slot is already booked",
         });
+
       }
     }
 
+    // 🔹 Insert new appointment
     await db.query(
-      `INSERT INTO Appointment 
-         (doctor_id, patient_id, appointment_date, appointment_time, status)
-         VALUES (?, ?, ?, ?, 'ongoing')`,
-      [doctor_id, patientId, appointment_date, appointment_time],
+      `INSERT INTO Appointment
+       (doctor_id, patient_id, appointment_date, appointment_time, status)
+       VALUES (?, ?, ?, ?, 'confirmed')`,
+      [doctor_id, patientId, appointment_date, appointment_time]
     );
 
-    res.json({ success: true, message: "Appointment booked successfully" });
+    res.json({
+      success: true,
+      message: "Appointment booked successfully",
+    });
+
   } catch (error) {
     console.log("Book Appointment Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

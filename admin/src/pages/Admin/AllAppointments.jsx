@@ -8,9 +8,8 @@ const AllAppointments = () => {
 
   const [activeTab, setActiveTab] = useState("upcoming");
   const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortOrder, setSortOrder] = useState("asc");
 
-  // date filter
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -24,17 +23,14 @@ const AllAppointments = () => {
     setSearch("");
     setFromDate("");
     setToDate("");
-    setSortOrder("desc");
   };
 
-  // แยกประเภทตาม status จาก SQL
   const getType = (item) => {
     if (item.status === "cancelled") return "cancelled";
     if (item.status === "completed") return "completed";
     return "upcoming";
   };
 
-  // format วันที่
   const formatDateTime = (dateString, timeString) => {
     const date = new Date(dateString);
     const formattedDate = date.toLocaleDateString("en-GB", {
@@ -49,7 +45,6 @@ const AllAppointments = () => {
     let filtered = appointments
       .filter((item) => getType(item) === activeTab)
 
-      // search
       .filter((item) => {
         if (!search) return true;
         return (
@@ -58,7 +53,6 @@ const AllAppointments = () => {
         );
       })
 
-      // date filter
       .filter((item) => {
         const appointmentDate = new Date(item.appointment_date);
 
@@ -84,11 +78,13 @@ const AllAppointments = () => {
 
   return (
     <div className="w-full max-w-6xl m-5">
+
       {/* Header + Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
         <p className="text-lg font-medium">All Appointments</p>
 
         <div className="flex flex-wrap items-center gap-2">
+
           <input
             type="text"
             placeholder="Search patient or doctor..."
@@ -96,16 +92,6 @@ const AllAppointments = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-1 rounded text-sm w-48"
           />
-
-          {/* Sort */}
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="border px-2 py-1 rounded text-sm"
-          >
-            <option value="desc">Latest</option>
-            <option value="asc">Oldest</option>
-          </select>
 
           {/* From */}
           <div className="flex items-center gap-1">
@@ -159,10 +145,21 @@ const AllAppointments = () => {
 
       {/* Table */}
       <div className="border rounded text-sm">
+
+        {/* Header */}
         <div className="grid grid-cols-[0.5fr_3fr_3fr_3fr_1fr] py-3 px-6 border-b bg-gray-50 font-medium">
           <p>#</p>
           <p>Patient</p>
-          <p>Date & Time</p>
+
+          <p
+            onClick={() =>
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+            }
+            className="cursor-pointer flex items-center gap-1"
+          >
+            Date & Time {sortOrder === "asc" ? "↑" : "↓"}
+          </p>
+
           <p>Doctor</p>
           <p className="text-center">Action</p>
         </div>
@@ -172,11 +169,7 @@ const AllAppointments = () => {
             key={item.appointment_id}
             className="grid grid-cols-[0.5fr_3fr_3fr_3fr_1fr] items-center text-gray-600 py-3 px-6 border-b hover:bg-gray-50"
           >
-            <p>
-              {sortOrder === "desc"
-                ? filteredAppointments.length - index
-                : index + 1}
-            </p>
+            <p>{index + 1}</p>
 
             {/* Patient */}
             <div className="flex items-center gap-2">

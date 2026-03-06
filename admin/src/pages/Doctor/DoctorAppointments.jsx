@@ -18,7 +18,7 @@ const DoctorAppointments = () => {
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   useEffect(() => {
     if (dToken) {
@@ -30,7 +30,6 @@ const DoctorAppointments = () => {
     setSearch("");
     setFromDate("");
     setToDate("");
-    setSortOrder("desc");
   };
 
   // Filter by status
@@ -44,7 +43,7 @@ const DoctorAppointments = () => {
 
   // Search
   const filteredBySearch = filteredByStatus.filter((item) =>
-    item.name?.toLowerCase().includes(search.toLowerCase()),
+    item.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   // Date filter
@@ -73,10 +72,13 @@ const DoctorAppointments = () => {
 
   return (
     <div className="w-full max-w-6xl m-5">
+
+      {/* Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
         <p className="text-lg font-medium">Doctor Appointments</p>
 
         <div className="flex flex-wrap items-center gap-2">
+
           <input
             type="text"
             placeholder="Search patient..."
@@ -84,16 +86,6 @@ const DoctorAppointments = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="border px-3 py-1 rounded text-sm w-48"
           />
-
-          {/* Sort */}
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="border px-2 py-1 rounded text-sm"
-          >
-            <option value="desc">Latest</option>
-            <option value="asc">Oldest</option>
-          </select>
 
           {/* From */}
           <div className="flex items-center gap-1">
@@ -146,12 +138,22 @@ const DoctorAppointments = () => {
       </div>
 
       <div className="bg-white border rounded text-sm max-h-[70vh] overflow-y-auto">
+
         {/* Header */}
         <div className="hidden sm:grid grid-cols-[0.5fr_2fr_1fr_2fr_1fr] gap-2 py-3 px-6 border-b bg-gray-50 font-medium">
           <p>#</p>
           <p>Patient</p>
           <p>Age</p>
-          <p>Date & Time</p>
+
+          <p
+            onClick={() =>
+              setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+            }
+            className="cursor-pointer flex items-center gap-1"
+          >
+            Date & Time {sortOrder === "asc" ? "↑" : "↓"}
+          </p>
+
           <p className="text-center">Action</p>
         </div>
 
@@ -166,9 +168,7 @@ const DoctorAppointments = () => {
             key={item.appointment_id}
             className="grid grid-cols-[0.5fr_2fr_1fr_2fr_1fr] gap-2 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-50"
           >
-            <p>
-              {sortOrder === "desc" ? finalFiltered.length - index : index + 1}
-            </p>
+            <p>{index + 1}</p>
 
             <div className="flex items-center gap-2">
               <img
@@ -197,6 +197,7 @@ const DoctorAppointments = () => {
             </p>
 
             <div className="flex justify-center gap-2">
+
               {item.status === "cancelled" && (
                 <p className="text-red-400 text-xs font-medium">Cancelled</p>
               )}
@@ -220,22 +221,28 @@ const DoctorAppointments = () => {
                   <img
                     onClick={(e) => {
                       e.stopPropagation();
+
                       const appointmentDateTime = new Date(
-                        item.appointment_date,
+                        item.appointment_date
                       );
-                      const [hours, minutes] = item.appointment_time.split(":");
+
+                      const [hours, minutes] =
+                        item.appointment_time.split(":");
+
                       appointmentDateTime.setHours(hours, minutes, 0, 0);
 
-                      // Allow access 30 minutes before the appointment
                       const allowedTime = new Date(
-                        appointmentDateTime.getTime() - 30 * 60 * 1000,
+                        appointmentDateTime.getTime() - 30 * 60 * 1000
                       );
 
                       if (new Date() < allowedTime) {
                         toast.error("ยังไม่ถึงเวลานัดหมาย");
                         return;
                       }
-                      navigate(`/doctor-medical-record/${item.appointment_id}`);
+
+                      navigate(
+                        `/doctor-medical-record/${item.appointment_id}`
+                      );
                     }}
                     className="w-8 cursor-pointer"
                     src={assets.tick_icon}
