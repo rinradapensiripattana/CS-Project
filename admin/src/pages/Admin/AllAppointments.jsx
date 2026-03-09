@@ -42,11 +42,27 @@ const AllAppointments = () => {
   };
 
   const filteredAppointments = useMemo(() => {
+    const now = new Date();
+
     let filtered = appointments
-      .filter((item) => getType(item) === activeTab)
+      .filter((item) => {
+        if (getType(item) !== activeTab) return false;
+
+        // ซ่อน appointment ที่ผ่านเวลาแล้วจาก upcoming
+        if (activeTab === "upcoming") {
+          const appointmentDateTime = new Date(item.appointment_date);
+          const [hour, minute] = item.appointment_time.split(":");
+          appointmentDateTime.setHours(hour, minute, 0);
+
+          if (appointmentDateTime < now) return false;
+        }
+
+        return true;
+      })
 
       .filter((item) => {
         if (!search) return true;
+
         return (
           item.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
           item.doctor_name?.toLowerCase().includes(search.toLowerCase())
