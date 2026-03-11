@@ -8,6 +8,25 @@ const lineClient = new line.Client({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
 });
 
+// ==========================
+// FORMAT DATE + TIME (THAI)
+// ==========================
+const formatDateTime = (date, time) => {
+
+  const formattedDate = new Date(date).toLocaleDateString("th-TH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+
+  const formattedTime = time ? time.slice(0, 5) : "-";
+
+  return {
+    date: formattedDate,
+    time: formattedTime
+  };
+};
+
 // API for doctor Login
 const loginDoctor = async (req, res) => {
   try {
@@ -187,6 +206,102 @@ const appointmentComplete = async (req, res) => {
     );
 
     // =========================
+    // 🔔 LINE RESULT NOTIFICATION
+    // =========================
+
+    // ดึง line user
+    const [patient] = await db.query(
+      "SELECT line_user_id FROM Patient WHERE patient_id = ?",
+      [appointment.patient_id]
+    );
+
+    const lineUserId = patient[0]?.line_user_id;
+
+    if (lineUserId) {
+
+      const [doctorName] = await db.query(
+        `SELECT u.name
+     FROM Doctor d
+     JOIN Users u ON d.user_id = u.user_id
+     WHERE d.doctor_id = ?`,
+        [appointment.doctor_id]
+      );
+
+      const name = doctorName[0]?.name || "Doctor";
+
+      const { date: formattedDate, time: formattedTime } =
+        formatDateTime(appointment.appointment_date, appointment.appointment_time);
+
+      await lineClient.pushMessage(lineUserId, {
+        type: "flex",
+        altText: "ผลการรักษา",
+        contents: {
+          type: "bubble",
+          body: {
+            type: "box",
+            layout: "vertical",
+            spacing: "md",
+            contents: [
+              {
+                type: "text",
+                text: "📋 ผลการรักษา",
+                weight: "bold",
+                size: "xl"
+              },
+              {
+                type: "separator"
+              },
+              {
+                type: "text",
+                text: `👨‍⚕️ แพทย์: ${name}`
+              },
+              {
+                type: "text",
+                text: `📅 วันที่: ${formattedDate}`
+              },
+              {
+                type: "text",
+                text: `⏰ เวลา: ${formattedTime}`
+              },
+              {
+                type: "separator",
+                margin: "md"
+              },
+              {
+                type: "text",
+                text: `🩺 อาการ: ${symptoms || "-"}`,
+                wrap: true
+              },
+              {
+                type: "text",
+                text: `💊 วิธีการรักษา: ${treatment || "-"}`,
+                wrap: true
+              }
+            ]
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              {
+                type: "separator"
+              },
+              {
+                type: "text",
+                text: "🏥 HelloDoctor Clinic",
+                align: "center",
+                size: "sm",
+                color: "#888888",
+                margin: "md"
+              }
+            ]
+          }
+        }
+      });
+
+    }
+
+    // =========================
     // 5️⃣ follow-up appointment
     // =========================
 
@@ -288,6 +403,9 @@ const appointmentComplete = async (req, res) => {
 
         const name = doctorName[0]?.name || "Doctor";
 
+        const { date: formattedDate, time: formattedTime } =
+          formatDateTime(followup_date, followup_time);
+
         await lineClient.pushMessage(lineUserId, {
           type: "flex",
           altText: "มีการนัดหมายติดตามอาการ",
@@ -314,11 +432,11 @@ const appointmentComplete = async (req, res) => {
                 },
                 {
                   type: "text",
-                  text: `📆 วันที่: ${followup_date}`
+                  text: `📆 วันที่: ${formattedDate}`
                 },
                 {
                   type: "text",
-                  text: `⏰ เวลา: ${followup_time}`
+                  text: `⏰ เวลา: ${formattedTime}`
                 },
               ]
             },
@@ -341,9 +459,9 @@ const appointmentComplete = async (req, res) => {
               ]
             }
           }
-          
+
         });
-        
+
 
       }
 
@@ -567,28 +685,19 @@ const appointmentCancel = async (req, res) => {
       JOIN Doctor d ON a.doctor_id = d.doctor_id
       JOIN Users u ON d.user_id = u.user_id
       WHERE a.appointment_id = ?
-    `,[appointment_id])
+    `, [appointment_id])
 
     if (!rows.length) {
       return res.json({
-        success:false,
-        message:"Appointment not found"
+        success: false,
+        message: "Appointment not found"
       })
     }
 
     const data = rows[0]
 
-    // format วันที่
-    const date = new Date(data.appointment_date)
-
-    const formattedDate = date.toLocaleDateString("th-TH", {
-      year: "numeric",
-      month: "long",
-      day: "numeric"
-    })
-
-    // format เวลา
-    const formattedTime = data.appointment_time.slice(0,5)
+    const { date: formattedDate, time: formattedTime } =
+      formatDateTime(data.appointment_date, data.appointment_time);
 
     // update status
     await db.query(

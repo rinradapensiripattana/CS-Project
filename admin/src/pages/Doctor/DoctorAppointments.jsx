@@ -33,11 +33,24 @@ const DoctorAppointments = () => {
   };
 
   // Filter by status
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
   const filteredByStatus = appointments.filter((item) => {
-    if (activeTab === "upcoming")
-      return item.status === "confirmed" || item.status === "ongoing";
+  
+    const appointmentDate = new Date(item.appointment_date);
+    appointmentDate.setHours(0,0,0,0);
+  
+    if (activeTab === "upcoming") {
+      return (
+        (item.status === "confirmed" || item.status === "ongoing") &&
+        appointmentDate >= today
+      );
+    }
+  
     if (activeTab === "completed") return item.status === "completed";
     if (activeTab === "cancelled") return item.status === "cancelled";
+  
     return true;
   });
 
