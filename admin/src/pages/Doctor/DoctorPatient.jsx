@@ -1,13 +1,40 @@
 import React, { useContext, useEffect, useState } from "react";
 import { DoctorContext } from "../../context/DoctorContext";
 import { AppContext } from "../../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const DoctorPatient = () => {
-  const { dToken, appointments, getAppointments } = useContext(DoctorContext);
-  const { calculateAge } = useContext(AppContext);
+  const { dToken, setDToken } = useContext(DoctorContext);
+  const { calculateAge, backendUrl } = useContext(AppContext);
 
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [search, setSearch] = useState("");
+  const [appointments, setAppointments] = useState([]);
+
+  const getAppointments = async () => {
+    try {
+      const { data } = await axios.get(
+        backendUrl + "/api/doctor/appointments",
+        {
+          headers: { Authorization: `Bearer ${dToken}` },
+        },
+      );
+      if (data.success) {
+        setAppointments(data.appointments);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        toast.error("Session Expired. Please login again.");
+        setDToken("");
+        localStorage.removeItem("dToken");
+      }
+      console.log(error);
+      toast.error(error.message);
+    }
+  };
 
   useEffect(() => {
     if (dToken) {

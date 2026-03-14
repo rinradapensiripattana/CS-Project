@@ -5,7 +5,7 @@ import { v2 as cloudinary } from "cloudinary";
 import * as line from "@line/bot-sdk";
 
 const lineClient = new line.Client({
-  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
 });
 
 // ==========================
@@ -89,13 +89,15 @@ const appointmentsDoctor = async (req, res) => {
             a.appointment_time,
             a.status,
             u.name,
-            u.image,
+            u.image, 
+            p.gender,
+            p.phone,
             p.date_of_birth,
             m.symptom AS symptoms,
             m.treatment
           FROM Appointment a
-          JOIN Patient p ON a.patient_id = p.patient_id
-          JOIN Users u ON p.user_id = u.user_id
+          LEFT JOIN Patient p ON a.patient_id = p.patient_id
+          LEFT JOIN Users u ON p.user_id = u.user_id
           LEFT JOIN Medical_Record m ON a.appointment_id = m.appointment_id
           WHERE a.doctor_id = ?
           ORDER BY a.appointment_date DESC
@@ -120,7 +122,6 @@ const appointmentsDoctor = async (req, res) => {
 // API to complete appointment + save medical record
 const appointmentComplete = async (req, res) => {
   try {
-
     const userId = req.doctor.id;
 
     const {
@@ -128,7 +129,7 @@ const appointmentComplete = async (req, res) => {
       symptoms,
       treatment,
       followup_date,
-      followup_time
+      followup_time,
     } = req.body;
 
     // =========================
@@ -137,7 +138,7 @@ const appointmentComplete = async (req, res) => {
 
     const [doctor] = await db.query(
       "SELECT doctor_id FROM Doctor WHERE user_id = ?",
-      [userId]
+      [userId],
     );
 
     if (!doctor.length) {
@@ -155,7 +156,7 @@ const appointmentComplete = async (req, res) => {
 
     const [check] = await db.query(
       "SELECT * FROM Appointment WHERE appointment_id = ? AND doctor_id = ?",
-      [appointment_id, doctorId]
+      [appointment_id, doctorId],
     );
 
     if (!check.length) {
@@ -173,27 +174,23 @@ const appointmentComplete = async (req, res) => {
 
     const [record] = await db.query(
       "SELECT * FROM Medical_Record WHERE appointment_id = ?",
-      [appointment_id]
+      [appointment_id],
     );
 
     if (record.length > 0) {
-
       await db.query(
         `UPDATE Medical_Record
          SET symptom = ?, treatment = ?, record_date = NOW()
          WHERE appointment_id = ?`,
-        [symptoms, treatment, appointment_id]
+        [symptoms, treatment, appointment_id],
       );
-
     } else {
-
       await db.query(
         `INSERT INTO Medical_Record
          (appointment_id, symptom, treatment, record_date)
          VALUES (?, ?, ?, NOW())`,
-        [appointment_id, symptoms, treatment]
+        [appointment_id, symptoms, treatment],
       );
-
     }
 
     // =========================
@@ -202,7 +199,7 @@ const appointmentComplete = async (req, res) => {
 
     await db.query(
       "UPDATE Appointment SET status = 'completed' WHERE appointment_id = ?",
-      [appointment_id]
+      [appointment_id],
     );
 
     // =========================
@@ -306,10 +303,9 @@ const appointmentComplete = async (req, res) => {
     // =========================
 
     if (followup_date && followup_time) {
-
       const [doctorStatus] = await db.query(
         "SELECT available FROM Doctor WHERE doctor_id = ?",
-        [appointment.doctor_id]
+        [appointment.doctor_id],
       );
 
       if (!doctorStatus.length || doctorStatus[0].available !== 1) {
@@ -326,7 +322,7 @@ const appointmentComplete = async (req, res) => {
          AND appointment_date = ?
          AND appointment_time = ?
          AND status != 'cancelled'`,
-        [appointment.patient_id, followup_date, followup_time]
+        [appointment.patient_id, followup_date, followup_time],
       );
 
       if (patientConflict.length > 0) {
@@ -341,31 +337,24 @@ const appointmentComplete = async (req, res) => {
          WHERE doctor_id = ?
          AND appointment_date = ?
          AND appointment_time = ?`,
-        [appointment.doctor_id, followup_date, followup_time]
+        [appointment.doctor_id, followup_date, followup_time],
       );
 
       if (existing.length > 0) {
-
         if (existing[0].status === "cancelled") {
-
           await db.query(
             `UPDATE Appointment
              SET patient_id = ?, status = 'confirmed'
              WHERE appointment_id = ?`,
-            [appointment.patient_id, existing[0].appointment_id]
+            [appointment.patient_id, existing[0].appointment_id],
           );
-
         } else {
-
           return res.json({
             success: false,
             message: "Follow-up time slot is already booked",
           });
-
         }
-
       } else {
-
         await db.query(
           `INSERT INTO Appointment
            (patient_id, doctor_id, appointment_date, appointment_time, status)
@@ -375,9 +364,8 @@ const appointmentComplete = async (req, res) => {
             appointment.doctor_id,
             followup_date,
             followup_time,
-          ]
+          ],
         );
-
       }
 
       // =========================
@@ -386,19 +374,18 @@ const appointmentComplete = async (req, res) => {
 
       const [patient] = await db.query(
         "SELECT line_user_id FROM Patient WHERE patient_id = ?",
-        [appointment.patient_id]
+        [appointment.patient_id],
       );
 
       const lineUserId = patient[0]?.line_user_id;
 
       if (lineUserId) {
-
         const [doctorName] = await db.query(
           `SELECT u.name
            FROM Doctor d
            JOIN Users u ON d.user_id = u.user_id
            WHERE d.doctor_id = ?`,
-          [appointment.doctor_id]
+          [appointment.doctor_id],
         );
 
         const name = doctorName[0]?.name || "Doctor";
@@ -419,16 +406,16 @@ const appointmentComplete = async (req, res) => {
                   type: "text",
                   text: "📅 นัดหมายติดตามอาการ",
                   weight: "bold",
-                  size: "xl"
+                  size: "xl",
                 },
                 {
                   type: "separator",
-                  margin: "md"
+                  margin: "md",
                 },
                 {
                   type: "text",
                   text: `👨‍⚕️ แพทย์: ${name}`,
-                  margin: "lg"
+                  margin: "lg",
                 },
                 {
                   type: "text",
@@ -438,7 +425,7 @@ const appointmentComplete = async (req, res) => {
                   type: "text",
                   text: `⏰ เวลา: ${formattedTime}`
                 },
-              ]
+              ],
             },
             footer: {
               type: "box",
@@ -446,7 +433,7 @@ const appointmentComplete = async (req, res) => {
               margin: "lg",
               contents: [
                 {
-                  type: "separator"
+                  type: "separator",
                 },
                 {
                   type: "text",
@@ -464,23 +451,19 @@ const appointmentComplete = async (req, res) => {
 
 
       }
-
     }
 
     res.json({
       success: true,
       message: "Appointment Completed",
     });
-
   } catch (error) {
-
     console.log(error);
 
     res.json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -618,10 +601,12 @@ const doctorDashboard = async (req, res) => {
         a.appointment_time,
         a.status,
         u.name,
-        u.image
+        u.image,
+        p.gender,
+        p.date_of_birth
       FROM Appointment a
-      JOIN Patient p ON a.patient_id = p.patient_id
-      JOIN Users u ON p.user_id = u.user_id
+      LEFT JOIN Patient p ON a.patient_id = p.patient_id
+      LEFT JOIN Users u ON p.user_id = u.user_id
       WHERE a.doctor_id = ?
       ORDER BY a.created_at DESC
     `,
@@ -631,10 +616,34 @@ const doctorDashboard = async (req, res) => {
     // 4️⃣ นับจำนวนคนไข้ไม่ซ้ำ
     const [patientsCount] = await db.query(
       `
-        SELECT COUNT(DISTINCT patient_id) as totalPatients
+        SELECT COUNT(DISTINCT patient_id) as totalPatients, 0 as fallback
         FROM Appointment
         WHERE doctor_id = ?
       `,
+      [doctorId],
+    );
+
+    // 5️⃣ ข้อมูลเพศคนไข้ของหมอคนนี้
+    const [genderData] = await db.query(
+      `
+      SELECT p.gender, COUNT(DISTINCT p.patient_id) as count
+      FROM Appointment a
+      JOIN Patient p ON a.patient_id = p.patient_id
+      WHERE a.doctor_id = ?
+      GROUP BY p.gender
+    `,
+      [doctorId],
+    );
+
+    // 6️⃣ ข้อมูลสำหรับกราฟแท่ง (Last 7 Days) เฉพาะของหมอคนนั้น
+    const [appointmentsGraph] = await db.query(
+      `
+      SELECT DATE_FORMAT(appointment_date, '%Y-%m-%d') as date, status, COUNT(*) as count 
+      FROM Appointment 
+      WHERE doctor_id = ?
+      GROUP BY date, status 
+      ORDER BY date ASC
+    `,
       [doctorId],
     );
 
@@ -644,6 +653,8 @@ const doctorDashboard = async (req, res) => {
         totalAppointments: appointments.length,
         totalPatients: patientsCount[0].totalPatients,
         latestAppointments: appointments,
+        genderData,
+        appointmentsGraph,
       },
     });
   } catch (error) {
@@ -654,27 +665,27 @@ const doctorDashboard = async (req, res) => {
 
 const appointmentCancel = async (req, res) => {
   try {
-
-    const userId = req.doctor.id
-    const { appointment_id } = req.body
+    const userId = req.doctor.id;
+    const { appointment_id } = req.body;
 
     // หา doctor_id จาก user_id
     const [doctor] = await db.query(
       "SELECT doctor_id FROM Doctor WHERE user_id = ?",
-      [userId]
-    )
+      [userId],
+    );
 
     if (!doctor.length) {
       return res.json({
         success: false,
-        message: "Doctor not found"
-      })
+        message: "Doctor not found",
+      });
     }
 
-    const doctorId = doctor[0].doctor_id
+    const doctorId = doctor[0].doctor_id;
 
     // ดึงข้อมูลการนัด
-    const [rows] = await db.query(`
+    const [rows] = await db.query(
+      `
       SELECT 
         a.appointment_date,
         a.appointment_time,
@@ -685,32 +696,40 @@ const appointmentCancel = async (req, res) => {
       JOIN Doctor d ON a.doctor_id = d.doctor_id
       JOIN Users u ON d.user_id = u.user_id
       WHERE a.appointment_id = ?
-    `, [appointment_id])
+    `,[appointment_id])
 
     if (!rows.length) {
       return res.json({
-        success: false,
-        message: "Appointment not found"
+        success:false,
+        message:"Appointment not found"
       })
     }
 
-    const data = rows[0]
+    const data = rows[0];
 
-    const { date: formattedDate, time: formattedTime } =
-      formatDateTime(data.appointment_date, data.appointment_time);
+    // format วันที่
+    const date = new Date(data.appointment_date)
+
+    const formattedDate = date.toLocaleDateString("th-TH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    })
+
+    // format เวลา
+    const formattedTime = data.appointment_time.slice(0,5)
 
     // update status
     await db.query(
       "UPDATE Appointment SET status = 'cancelled' WHERE appointment_id = ? AND doctor_id = ?",
-      [appointment_id, doctorId]
-    )
+      [appointment_id, doctorId],
+    );
 
     // =====================
     // 🔔 LINE NOTIFICATION
     // =====================
 
     if (data.line_user_id) {
-
       await lineClient.pushMessage(data.line_user_id, {
         type: "flex",
         altText: "การนัดหมายถูกยกเลิก",
@@ -726,34 +745,34 @@ const appointmentCancel = async (req, res) => {
                 text: "⚠️ การนัดหมายถูกยกเลิกโดยแพทย์",
                 weight: "bold",
                 //size: "sm",
-                wrap: true
+                wrap: true,
               },
               {
-                type: "separator"
+                type: "separator",
               },
               {
                 type: "text",
                 text: `👨‍⚕️ แพทย์: ${data.doctor_name}`,
-                wrap: true
+                wrap: true,
               },
               {
                 type: "text",
                 text: `📅 วันที่: ${formattedDate}`,
-                wrap: true
+                wrap: true,
               },
               {
                 type: "text",
                 text: `⏰ เวลา: ${formattedTime}`,
-                wrap: true
-              }
-            ]
+                wrap: true,
+              },
+            ],
           },
           footer: {
             type: "box",
             layout: "vertical",
             contents: [
               {
-                type: "separator"
+                type: "separator",
               },
               {
                 type: "text",
@@ -761,27 +780,25 @@ const appointmentCancel = async (req, res) => {
                 align: "center",
                 size: "sm",
                 color: "#888888",
-                margin: "md"
-              }
-            ]
-          }
-        }
-      })
-
+                margin: "md",
+              },
+            ],
+          },
+        },
+      });
     }
 
     res.json({
       success: true,
-      message: "Appointment Cancelled"
-    })
-
+      message: "Appointment Cancelled",
+    });
   } catch (error) {
     res.json({
       success: false,
-      message: error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
 
 export {
   loginDoctor,

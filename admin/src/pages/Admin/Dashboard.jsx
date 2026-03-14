@@ -1,14 +1,77 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import { assets } from "../../assets/assets";
 import { AdminContext } from "../../context/AdminContext";
+import { AppContext } from "../../context/AppContext";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+const CountUp = ({ end, duration = 1000 }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      // easeOutQuad animation
+      setCount(Math.floor(progress * (2 - progress) * end));
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  }, [end, duration]);
+
+  return <>{count}</>;
+};
 
 const Dashboard = () => {
-  const { aToken, getDashData, cancelAppointment, dashData } =
-    useContext(AdminContext);
+  const {
+    aToken,
+    getDashData,
+    cancelAppointment,
+    dashData,
+    doctors,
+    getAllDoctors,
+  } = useContext(AdminContext);
+  const { calculateAge, backendUrl } = useContext(AppContext);
+
+  const [tooltip, setTooltip] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    content: "",
+  });
+
+  const [selectedDoctor, setSelectedDoctor] = useState("all");
+  const [dateFilter, setDateFilter] = useState("last7");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+
+  // Color Palette for Doctors
+  const doctorColors = [
+    "#FF6384",
+    "#36A2EB",
+    "#FFCE56",
+    "#4BC0C0",
+    "#9966FF",
+    "#FF9F40",
+    "#8AC926",
+    "#FF9AA2",
+  ];
+
+  const statusColors = {
+    confirmed: "#3B82F6", // Blue
+    completed: "#22C55E", // Green
+    cancelled: "#EF4444", // Red
+  };
 
   useEffect(() => {
     if (aToken) {
       getDashData();
+      getAllDoctors(); // ดึงข้อมูลหมอทั้งหมดมาด้วย
     }
   }, [aToken]);
 
@@ -23,45 +86,677 @@ const Dashboard = () => {
     });
   };
 
-  if (!dashData) return null;
+  // 🎨 ฟังก์ชันสร้างกราฟวงกลมด้วย CSS
+  const renderPieChart = (data) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 w-full">
+          <div className="flex justify-center sm:justify-end flex-1">
+            <div
+              className="relative w-48 h-48 rounded-full shadow-inner bg-gray-100"
+              style={{ background: `conic-gradient(#e5e7eb 0% 100%)` }}
+            >
+              <div className="absolute inset-0 m-auto w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-gray-300">0</p>
+                  <p className="text-xs text-gray-400">Patients</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-center sm:justify-start flex-1">
+            <p className="text-gray-400 text-sm">
+              No patient data available yet.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const total = data.reduce((sum, item) => sum + item.count, 0);
+    let currentAngle = 0;
+
+    const getColor = (gender) => {
+      switch (gender?.toLowerCase()) {
+        case "male":
+          return "#36A2EB"; // Blue (Matches doctorColors)
+        case "female":
+          return "#FF6384"; // Pink (Matches doctorColors)
+        default:
+          return "#FFCE56"; // Yellow (Matches doctorColors)
+      }
+    };
+
+    const gradient = data
+      .map((item, index) => {
+        const percentage = (item.count / total) * 100;
+        const start = currentAngle;
+        currentAngle += percentage;
+        return `${getColor(item.gender)} ${start}% ${currentAngle}%`;
+      })
+      .join(", ");
+
+    return (
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-8 w-full">
+        <style>{`
+          @keyframes spinLoad {
+            from { transform: rotate(-180deg) scale(0.5); opacity: 0; }
+            to { transform: rotate(0deg) scale(1); opacity: 1; }
+          }
+        `}</style>
+        <div className="flex justify-center sm:justify-end flex-1">
+          <div
+            className="relative w-48 h-48 rounded-full shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer"
+            style={{
+              background: `conic-gradient(${gradient})`,
+              animation: "spinLoad 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            }}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              const centerX = rect.width / 2;
+              const centerY = rect.height / 2;
+              const dx = x - centerX;
+              const dy = y - centerY;
+
+              // คำนวณระยะห่างจากจุดศูนย์กลาง (เพื่อไม่ให้แสดง Tooltip ตรงรูโดนัท)
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              const radius = rect.width / 2;
+              if (distance < radius * 0.6) {
+                setTooltip({ ...tooltip, visible: false });
+                return;
+              }
+
+              // คำนวณองศา (0 ที่ด้านบน, หมุนตามเข็มนาฬิกา)
+              let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+              angle += 90;
+              if (angle < 0) angle += 360;
+
+              const percentage = (angle / 360) * 100;
+
+              let currentP = 0;
+              const item = data.find((d) => {
+                const p = (d.count / total) * 100;
+                if (percentage >= currentP && percentage < currentP + p) {
+                  return true;
+                }
+                currentP += p;
+                return false;
+              });
+
+              if (item) {
+                setTooltip({
+                  visible: true,
+                  x: e.clientX,
+                  y: e.clientY,
+                  content: `${item.gender || "Not Specified"}: ${item.count} (${((item.count / total) * 100).toFixed(1)}%)`,
+                });
+              }
+            }}
+            onMouseLeave={() => setTooltip({ ...tooltip, visible: false })}
+          >
+            <div className="absolute inset-0 m-auto w-28 h-28 bg-white rounded-full flex items-center justify-center shadow-inner pointer-events-none">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-700">{total}</p>
+                <p className="text-xs text-gray-500">Patients</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tooltip */}
+        {tooltip.visible && (
+          <div
+            className="fixed bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none z-50 shadow-lg whitespace-nowrap"
+            style={{ left: tooltip.x + 15, top: tooltip.y + 15 }}
+          >
+            {tooltip.content}
+          </div>
+        )}
+
+        <div className="flex justify-center sm:justify-start flex-1">
+          <div className="flex flex-col gap-3 text-sm">
+            {data.map((item, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <span
+                  className="w-4 h-4 rounded-md shadow-sm"
+                  style={{ backgroundColor: getColor(item.gender) }}
+                ></span>
+                <div className="flex flex-col">
+                  <span className="text-gray-700 font-medium capitalize">
+                    {item.gender || "Not Specified"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {item.count} people (
+                    {((item.count / total) * 100).toFixed(1)}
+                    %)
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Prepare Chart Data
+  const { chartData, visibleDoctors, allDoctors } = useMemo(() => {
+    if (!dashData) return { chartData: [], visibleDoctors: [], allDoctors: [] };
+
+    const dateList = [];
+    if (dateFilter === "custom" && customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dateList.push(new Date(d));
+      }
+    } else if (dateFilter === "thisMonth") {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        dateList.push(new Date(year, month, i));
+      }
+    } else if (dateFilter === "thisYear") {
+      const today = new Date();
+      const year = today.getFullYear();
+      for (let i = 0; i < 12; i++) {
+        // สร้างวันที่เป็นวันแรกของแต่ละเดือน
+        dateList.push(new Date(year, i, 1));
+      }
+    } else {
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diffToMonday);
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        dateList.push(d);
+      }
+    }
+
+    const dataMap = {};
+    const doctorsSet = new Set();
+
+    // เพิ่มรายชื่อหมอทุกคนเข้าไปใน Set ก่อน เพื่อให้แสดงในตัวกรอง/Legend เสมอ
+    doctors?.forEach((doc) => doctorsSet.add(doc.name));
+
+    // ฟังก์ชันช่วยจัดกลุ่มวันที่
+    const getDateKey = (dateStr) => {
+      if (dateFilter === "thisYear") {
+        return dateStr.substring(0, 7); // YYYY-MM
+      }
+      return dateStr; // YYYY-MM-DD
+    };
+
+    dashData.appointmentsGraph?.forEach((item) => {
+      const dateKey = getDateKey(item.date);
+      if (!dataMap[dateKey]) {
+        dataMap[dateKey] = { doctors: {}, statuses: {} };
+      }
+
+      // Aggregate Total Counts per Doctor (Fix: use += to handle multiple status rows)
+      if (!dataMap[dateKey].doctors[item.doctor_name]) {
+        dataMap[dateKey].doctors[item.doctor_name] = 0;
+      }
+      dataMap[dateKey].doctors[item.doctor_name] += item.count;
+
+      // Aggregate Status Breakdown per Doctor
+      if (!dataMap[dateKey].statuses[item.doctor_name]) {
+        dataMap[dateKey].statuses[item.doctor_name] = {
+          confirmed: 0,
+          completed: 0,
+          cancelled: 0,
+        };
+      }
+      if (item.status) {
+        const s = item.status.toLowerCase();
+        if (dataMap[dateKey].statuses[item.doctor_name][s] !== undefined) {
+          dataMap[dateKey].statuses[item.doctor_name][s] += item.count;
+        }
+      }
+
+      doctorsSet.add(item.doctor_name);
+    });
+
+    const allDoctors = Array.from(doctorsSet).sort();
+    const visibleDoctors =
+      selectedDoctor === "all" ? allDoctors : [selectedDoctor];
+
+    const chartData = dateList.map((date) => {
+      let dateKey;
+      let labelWeekday = "";
+      let labelDayMonth = "";
+
+      if (dateFilter === "thisYear") {
+        // Key: YYYY-MM
+        dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        // Label: Month Year
+        labelWeekday = date.getFullYear().toString();
+        labelDayMonth = date.toLocaleDateString("en-GB", { month: "short" });
+      } else {
+        // Key: YYYY-MM-DD
+        dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        labelWeekday = date.toLocaleDateString("en-GB", { weekday: "short" });
+        labelDayMonth = date.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+        });
+      }
+
+      const dayData = dataMap[dateKey] || { doctors: {}, statuses: {} };
+
+      let total = 0;
+      const details = {};
+
+      if (selectedDoctor === "all") {
+        // Stack by Doctor
+        visibleDoctors.forEach((doc) => {
+          const count = dayData.doctors[doc] || 0;
+          if (count > 0) {
+            details[doc] = count;
+            total += count;
+          }
+        });
+      } else {
+        // Stack by Status for Selected Doctor
+        const doc = selectedDoctor;
+        const stats = dayData.statuses[doc] || {
+          confirmed: 0,
+          completed: 0,
+          cancelled: 0,
+        };
+        const docTotal = dayData.doctors[doc] || 0;
+
+        details.confirmed = stats.confirmed;
+        details.completed = stats.completed;
+        details.cancelled = stats.cancelled;
+
+        const statusSum = stats.confirmed + stats.completed + stats.cancelled;
+
+        // If there's a discrepancy (e.g., from appointments with NULL status),
+        // add it to 'confirmed' to ensure the total count is accurate.
+        if (docTotal > statusSum) {
+          details.confirmed += docTotal - statusSum;
+        }
+
+        total = details.confirmed + details.completed + details.cancelled;
+      }
+
+      return {
+        label: `${labelDayMonth} ${labelWeekday}`,
+        weekday: labelWeekday,
+        dayMonth: labelDayMonth,
+        count: total,
+        details: details,
+      };
+    });
+
+    return { chartData, visibleDoctors, allDoctors };
+  }, [
+    dashData,
+    selectedDoctor,
+    dateFilter,
+    customStartDate,
+    customEndDate,
+    doctors,
+  ]);
+
+  const maxCount =
+    Math.max(...(chartData?.map((d) => d.count) || [0]), 1) * 1.1;
+
+  const downloadCSV = async () => {
+    // 1. Fetch fresh data from DB
+    let appointmentsToExport = [];
+    try {
+      const { data } = await axios.get(backendUrl + "/api/admin/appointments", {
+        headers: { aToken },
+      });
+      if (data.success) {
+        appointmentsToExport = data.appointments;
+        // เรียงวันที่จากน้อยไปมาก
+        appointmentsToExport.sort((a, b) => {
+          const dateA = new Date(a.appointment_date);
+          const dateB = new Date(b.appointment_date);
+          if (dateA.getTime() !== dateB.getTime()) {
+            return dateA - dateB;
+          }
+          return a.appointment_time.localeCompare(b.appointment_time);
+        });
+      } else {
+        toast.error(data.message);
+        return;
+      }
+    } catch (error) {
+      toast.error("Failed to export data");
+      return;
+    }
+
+    // 1. BOM for UTF-8 Support
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+
+    // 2. Report Header
+    csvContent += "Admin Dashboard Report\n";
+    csvContent += "\n"; // Empty Line
+
+    // Detailed Appointments List
+    csvContent += "Detailed Appointments List\n";
+    csvContent +=
+      "Date,Time,Doctor,Patient Name,Patient Age,Patient Phone,Status,Gender\n";
+
+    // Use fetched data
+    appointmentsToExport.forEach((item) => {
+      // Wrap text in quotes
+      const date = `"${new Date(item.appointment_date).toLocaleDateString("en-GB")}"`;
+      const time = item.appointment_time
+        ? `"${item.appointment_time.slice(0, 5)}"`
+        : '""';
+      const doctor = item.doctor_name ? `"${item.doctor_name}"` : '""';
+      const patientName = item.patient_name ? `"${item.patient_name}"` : '""';
+      const age = item.date_of_birth ? calculateAge(item.date_of_birth) : "";
+      const phone = item.patient_phone ? `="${item.patient_phone}"` : '""';
+      const status = item.status ? `"${item.status}"` : '""';
+      const gender = item.gender ? `"${item.gender}"` : '"Not Specified"';
+
+      csvContent += `${date},${time},${doctor},${patientName},${age},${phone},${status},${gender}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "admin_dashboard_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!dashData) return <p className="m-5">Loading...</p>;
 
   return (
     <div className="m-5">
       {/* ===== Cards ===== */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 bg-white p-4 min-w-52 rounded border">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="flex items-center gap-3 bg-white p-6 rounded-xl border border-gray-100 shadow-md hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
           <img className="w-14" src={assets.doctor_icon} alt="" />
           <div>
             <p className="text-xl font-semibold text-gray-600">
-              {dashData.doctors}
+              <CountUp end={dashData.doctors} />
             </p>
-            <p className="text-gray-400">Doctors</p>
+            <p className="text-gray-500 text-sm">Doctors</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white p-4 min-w-52 rounded border">
+        <div className="flex items-center gap-3 bg-white p-6 rounded-xl border border-gray-100 shadow-md hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
           <img className="w-14" src={assets.appointments_icon} alt="" />
           <div>
             <p className="text-xl font-semibold text-gray-600">
-              {dashData.appointments}
+              <CountUp end={dashData.appointments} />
             </p>
-            <p className="text-gray-400">Appointments</p>
+            <p className="text-gray-500 text-sm">Appointments</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white p-4 min-w-52 rounded border">
+        <div className="flex items-center gap-3 bg-white p-6 rounded-xl border border-gray-100 shadow-md hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
           <img className="w-14" src={assets.patients_icon} alt="" />
           <div>
             <p className="text-xl font-semibold text-gray-600">
-              {dashData.patients}
+              <CountUp end={dashData.patients} />
             </p>
-            <p className="text-gray-400">Patients</p>
+            <p className="text-gray-500 text-sm">Patients</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={downloadCSV}
+          className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90 transition-all text-sm shadow-sm"
+        >
+          Export CSV
+        </button>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-4 mt-4">
+        {/* ===== Gender Chart ===== */}
+        <div className="bg-white rounded border p-6 w-full md:flex-1 shadow-md">
+          <p className="font-semibold text-lg mb-4">Patients by Gender</p>
+          <div
+            className="flex justify-center py-4"
+            style={{ animation: "fadeIn 1.5s ease-out" }}
+          >
+            <style>{`
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            `}</style>
+            {renderPieChart(dashData.genderData)}
+          </div>
+        </div>
+
+        {/* ===== Appointments Bar Chart (Last 7 Days) ===== */}
+        <div className="bg-white rounded border p-6 w-full md:flex-1 shadow-md">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+            <p className="font-semibold text-lg">Appointments by Doctor</p>
+
+            <div className="flex flex-wrap gap-2 items-center">
+              <select
+                className="border rounded px-2 py-1 text-sm outline-none text-gray-600"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              >
+                <option value="last7">This Week</option>
+                <option value="thisMonth">This Month</option>
+                <option value="thisYear">This Year</option>
+                <option value="custom">Custom Range</option>
+              </select>
+
+              {dateFilter === "custom" && (
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="date"
+                    className="border rounded px-2 py-1 text-sm"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                  />
+                  <span>-</span>
+                  <input
+                    type="date"
+                    className="border rounded px-2 py-1 text-sm"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <select
+                className="border rounded px-2 py-1 text-sm outline-none text-gray-600"
+                value={selectedDoctor}
+                onChange={(e) => setSelectedDoctor(e.target.value)}
+              >
+                <option value="all">All Doctors</option>
+                {allDoctors.map((doc) => (
+                  <option key={doc} value={doc}>
+                    {doc}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap gap-3 mb-4 text-xs text-gray-600">
+            {selectedDoctor === "all" ? (
+              visibleDoctors.map((doc) => (
+                <div key={doc} className="flex items-center gap-1">
+                  <span
+                    className="w-3 h-3 rounded-full"
+                    style={{
+                      backgroundColor:
+                        doctorColors[
+                          allDoctors.indexOf(doc) % doctorColors.length
+                        ],
+                    }}
+                  ></span>
+                  <span>{doc}</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex gap-4">
+                <div className="flex items-center gap-1">
+                  <span
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: statusColors.confirmed }}
+                  ></span>
+                  <span>Confirmed</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: statusColors.completed }}
+                  ></span>
+                  <span>Completed</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: statusColors.cancelled }}
+                  ></span>
+                  <span>Cancelled</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <style>{`
+            @keyframes growUp {
+              from { transform: scaleY(0); }
+              to { transform: scaleY(1); }
+            }
+          `}</style>
+          <div className="relative h-64 w-full">
+            <div className="h-full flex items-end gap-2 sm:gap-4 w-full pb-2 border-b border-gray-200 relative z-10">
+              {chartData.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex-1 flex flex-col items-center justify-end gap-2 group h-full relative"
+                >
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 z-20 shadow-lg min-w-[120px]">
+                    <p className="font-semibold border-b border-gray-600 pb-1 mb-1 text-center">
+                      {item.label}
+                    </p>
+                    {Object.entries(item.details).map(
+                      ([key, count], i) =>
+                        ((selectedDoctor === "all" && count > 0) ||
+                          selectedDoctor !== "all") && (
+                          <div
+                            key={key}
+                            className="flex justify-between gap-2 items-center"
+                          >
+                            <div className="flex items-center gap-1">
+                              <span
+                                className="w-2 h-2 rounded-full"
+                                style={{
+                                  backgroundColor:
+                                    selectedDoctor === "all"
+                                      ? doctorColors[
+                                          allDoctors.indexOf(key) %
+                                            doctorColors.length
+                                        ]
+                                      : statusColors[key],
+                                }}
+                              ></span>
+                              <span
+                                className={`truncate max-w-[80px] ${selectedDoctor === "all" ? "text-gray-300" : ""}`}
+                                style={{
+                                  color:
+                                    selectedDoctor === "all"
+                                      ? undefined
+                                      : statusColors[key],
+                                }}
+                              >
+                                {selectedDoctor === "all"
+                                  ? `${key}:`
+                                  : `${key.charAt(0).toUpperCase() + key.slice(1)}:`}
+                              </span>
+                            </div>
+                            <span>{count}</span>
+                          </div>
+                        ),
+                    )}
+                    <div className="w-2 h-2 bg-gray-800 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2"></div>
+                  </div>
+
+                  <p className="text-xs text-gray-500 font-medium">
+                    {item.count > 0 ? item.count : ""}
+                  </p>
+
+                  {/* Stacked Bar Container */}
+                  <div
+                    className="w-full rounded-t overflow-hidden flex flex-col-reverse relative group-hover:brightness-105 transition-all duration-300 bg-gray-100"
+                    style={{
+                      height: `${(item.count / maxCount) * 100}%`,
+                      animation: "growUp 1s ease-out forwards",
+                      transformOrigin: "bottom",
+                    }}
+                  >
+                    {selectedDoctor === "all"
+                      ? visibleDoctors.map((doc) => {
+                          const count = item.details[doc] || 0;
+                          const heightPercent =
+                            item.count > 0 ? (count / item.count) * 100 : 0;
+                          return heightPercent > 0 ? (
+                            <div
+                              key={doc}
+                              style={{
+                                height: `${heightPercent}%`,
+                                backgroundColor:
+                                  doctorColors[
+                                    allDoctors.indexOf(doc) %
+                                      doctorColors.length
+                                  ],
+                              }}
+                            ></div>
+                          ) : null;
+                        })
+                      : ["confirmed", "completed", "cancelled"].map(
+                          (status) => {
+                            const count = item.details[status] || 0;
+                            const heightPercent =
+                              item.count > 0 ? (count / item.count) * 100 : 0;
+                            return heightPercent > 0 ? (
+                              <div
+                                key={status}
+                                style={{
+                                  height: `${heightPercent}%`,
+                                  backgroundColor: statusColors[status],
+                                }}
+                              ></div>
+                            ) : null;
+                          },
+                        )}
+                  </div>
+
+                  <div className="flex flex-col items-center text-[10px] sm:text-xs text-gray-500 w-full text-center mt-1">
+                    <p className="uppercase">{item.weekday}</p>
+                    <p>{item.dayMonth}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ===== Latest Bookings ===== */}
-      <div className="bg-white mt-10 rounded border">
+      <div className="bg-white mt-10 rounded border shadow-md">
         <div className="flex items-center gap-2 px-4 py-4 border-b">
           <img src={assets.list_icon} alt="" className="w-6 h-6" />
           <p className="font-semibold">Latest Bookings</p>
@@ -91,13 +786,13 @@ const Dashboard = () => {
 
                 <p className="text-gray-600">
                   {formatDate(item.appointment_date)} ,{" "}
-                  {item.appointment_time.slice(0, 5)}
+                  {item.appointment_time?.slice(0, 5)}
                 </p>
               </div>
 
               {/* Status */}
               {item.status === "cancelled" ? (
-                <p className="text-red-400 text-xs font-medium">Cancelled</p>
+                <p className="text-red-500 text-xs font-medium">Cancelled</p>
               ) : item.status === "completed" ? (
                 <p className="text-green-500 text-xs font-medium">Completed</p>
               ) : (

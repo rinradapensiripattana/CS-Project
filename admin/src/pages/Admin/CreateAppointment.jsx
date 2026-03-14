@@ -2,15 +2,21 @@ import React, { useContext, useEffect, useState } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const CreateAppointment = () => {
   const { doctors, getAllDoctors, aToken } = useContext(AdminContext);
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
-  const [appointmentDate, setAppointmentDate] = useState("");
+  // ดึงค่า prefillDate จาก state ถ้ามี
+  const [appointmentDate, setAppointmentDate] = useState(
+    location.state?.prefillDate || "",
+  );
   const [appointmentTime, setAppointmentTime] = useState("");
 
   const [searchPatient, setSearchPatient] = useState("");
@@ -85,7 +91,22 @@ const CreateAppointment = () => {
 
   return (
     <form onSubmit={handleSubmit} className="m-5 w-full max-w-2xl">
-      <p className="mb-4 text-lg font-medium">Create New Appointment</p>
+      {/* แสดงปุ่ม Back ถ้ามาจาหน้า Calendar */}
+      {location.state?.prefillDate && (
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/all-appointments", {
+              state: { initialViewMode: "calendar" },
+            })
+          }
+          className="text-xs text-gray-500 hover:text-primary transition-colors flex items-center gap-1 mb-1"
+        >
+          &larr; Back
+        </button>
+      )}
+
+      <p className="text-lg font-medium mb-4">Create New Appointment</p>
 
       <div className="bg-white px-6 py-8 border rounded space-y-4 text-sm text-gray-600">
         <div className="relative">

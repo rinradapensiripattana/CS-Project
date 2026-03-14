@@ -1,12 +1,11 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import validator from "validator";
 import { v2 as cloudinary } from "cloudinary";
 import db from "../config/mysql.js";
 import * as line from "@line/bot-sdk";
 
 const lineClient = new line.Client({
-  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
 });
 
 // =======================
@@ -134,6 +133,9 @@ const appointmentsAdmin = async (req, res) => {
   
           pu.name AS patient_name,
           pu.image AS patient_image,
+          p.phone AS patient_phone,
+          p.gender,
+          p.date_of_birth,
   
           du.name AS doctor_name,
           du.image AS doctor_image
@@ -161,11 +163,11 @@ const appointmentsAdmin = async (req, res) => {
 
 const appointmentCancel = async (req, res) => {
   try {
+    const { id } = req.body;
 
-      const { id } = req.body
-
-      // ดึงข้อมูลการนัด
-      const [rows] = await db.execute(`
+    // ดึงข้อมูลการนัด
+    const [rows] = await db.execute(
+      `
           SELECT 
               a.appointment_date,
               a.appointment_time,
@@ -176,113 +178,115 @@ const appointmentCancel = async (req, res) => {
           JOIN Users u ON d.user_id = u.user_id
           JOIN Patient p ON a.patient_id = p.patient_id
           WHERE a.appointment_id = ?
-      `,[id])
+      `,
+      [id],
+    );
 
-      if(!rows.length){
-          return res.json({
-              success:false,
-              message:"Appointment not found"
-          })
-      }
+    if (!rows.length) {
+      return res.json({
+        success: false,
+        message: "Appointment not found",
+      });
+    }
 
-      const data = rows[0]
+    const data = rows[0];
 
-      const formattedDate = new Date(data.appointment_date).toLocaleDateString("th-TH",{
-          year:"numeric",
-          month:"long",
-          day:"numeric"
-      })
+    const formattedDate = new Date(data.appointment_date).toLocaleDateString(
+      "th-TH",
+      {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    );
 
-      const formattedTime = data.appointment_time.slice(0,5)
+    const formattedTime = data.appointment_time.slice(0, 5);
 
-      // update status
-      await db.execute(
-          "UPDATE Appointment SET status = 'cancelled' WHERE appointment_id = ?",
-          [id]
-      )
+    // update status
+    await db.execute(
+      "UPDATE Appointment SET status = 'cancelled' WHERE appointment_id = ?",
+      [id],
+    );
 
-      // =====================
-      // 🔔 LINE NOTIFICATION
-      // =====================
+    // =====================
+    // 🔔 LINE NOTIFICATION
+    // =====================
 
-      if(data.line_user_id){
-
-          await lineClient.pushMessage(data.line_user_id,{
-              type:"flex",
-              altText:"การนัดหมายถูกยกเลิก",
-              contents:{
-                  type:"bubble",
-                  body:{
-                      type:"box",
-                      layout:"vertical",
-                      contents:[
-                          {
-                              type:"text",
-                              text:"❌ การนัดหมายถูกยกเลิกโดยคลินิก",
-                              weight:"bold",
-                              //size:"xl"
-                          },
-                          {
-                              type:"separator",
-                              margin:"md"
-                          },
-                          {
-                              type:"box",
-                              layout:"vertical",
-                              margin:"lg",
-                              spacing:"sm",
-                              contents:[
-                                  {
-                                      type:"text",
-                                      text:`👨‍⚕️ แพทย์: ${data.doctor_name}`
-                                  },
-                                  {
-                                      type:"text",
-                                      text:`📆 วันที่: ${formattedDate}`
-                                  },
-                                  {
-                                      type:"text",
-                                      text:`⏰ เวลา: ${formattedTime}`
-                                  }
-                              ]
-                          }
-                      ]
+    if (data.line_user_id) {
+      await lineClient.pushMessage(data.line_user_id, {
+        type: "flex",
+        altText: "การนัดหมายถูกยกเลิก",
+        contents: {
+          type: "bubble",
+          body: {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              {
+                type: "text",
+                text: "❌ การนัดหมายถูกยกเลิกโดยคลินิก",
+                weight: "bold",
+                //size:"xl"
+              },
+              {
+                type: "separator",
+                margin: "md",
+              },
+              {
+                type: "box",
+                layout: "vertical",
+                margin: "lg",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: `👨‍⚕️ แพทย์: ${data.doctor_name}`,
                   },
-                  footer:{
-                      type:"box",
-                      layout:"vertical",
-                      margin:"lg",
-                      contents:[
-                          {
-                              type:"separator"
-                          },
-                          {
-                              type:"text",
-                              text:"🏥 HelloDoctor Clinic",
-                              align:"center",
-                              size:"sm",
-                              color:"#888888",
-                              margin:"md"
-                          }
-                      ]
-                  }
-              }
-          })
+                  {
+                    type: "text",
+                    text: `📆 วันที่: ${formattedDate}`,
+                  },
+                  {
+                    type: "text",
+                    text: `⏰ เวลา: ${formattedTime}`,
+                  },
+                ],
+              },
+            ],
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            contents: [
+              {
+                type: "separator",
+              },
+              {
+                type: "text",
+                text: "🏥 HelloDoctor Clinic",
+                align: "center",
+                size: "sm",
+                color: "#888888",
+                margin: "md",
+              },
+            ],
+          },
+        },
+      });
+    }
 
-      }
-
-      res.json({
-          success:true,
-          message:"Appointment Cancelled"
-      })
-
+    res.json({
+      success: true,
+      message: "Appointment Cancelled",
+    });
   } catch (error) {
-      res.json({
-          success:false,
-          message:error.message
-      })
+    res.json({
+      success: false,
+      message: error.message,
+    });
   }
-}
+};
 
 // =======================
 // Dashboard Data
@@ -309,19 +313,46 @@ const adminDashboard = async (req, res) => {
                 a.appointment_time,
                 a.status,
                 u.name AS doctor_name,
-                u.image AS doctor_image
+                u.image AS doctor_image,
+                p.gender,
+                p.date_of_birth,
+                pu.name AS patient_name
             FROM Appointment a
             JOIN Doctor d ON a.doctor_id = d.doctor_id
             JOIN Users u ON d.user_id = u.user_id
+            LEFT JOIN Patient p ON a.patient_id = p.patient_id
+            LEFT JOIN Users pu ON p.user_id = pu.user_id
             ORDER BY a.appointment_id DESC
-            LIMIT 5
         `);
+
+    // 🔥 ข้อมูลเพศ (Gender Distribution)
+    const [genderData] = await db.execute(`
+        SELECT gender, COUNT(*) as count 
+        FROM Patient 
+        GROUP BY gender
+    `);
+
+    // 🔥 ข้อมูลสำหรับกราฟแท่ง (Last 7 Days)
+    const [appointmentsGraph] = await db.execute(`
+        SELECT 
+            DATE_FORMAT(a.appointment_date, '%Y-%m-%d') as date, 
+            u.name as doctor_name,
+            a.status,
+            COUNT(*) as count 
+        FROM Appointment a
+        JOIN Doctor d ON a.doctor_id = d.doctor_id
+        JOIN Users u ON d.user_id = u.user_id
+        GROUP BY date, doctor_name, a.status
+        ORDER BY date ASC
+    `);
 
     const dashData = {
       doctors: doctorCount[0].total,
       patients: patientCount[0].total,
       appointments: appointmentCount[0].total,
       latestAppointments,
+      genderData,
+      appointmentsGraph,
     };
 
     res.json({ success: true, dashData });
@@ -376,7 +407,6 @@ const getAllPatients = async (req, res) => {
 // =======================
 const createAppointment = async (req, res) => {
   try {
-
     const { doctor_id, patient_id, appointment_date, appointment_time } =
       req.body;
 
@@ -402,7 +432,7 @@ const createAppointment = async (req, res) => {
 
     const [doctorStatus] = await db.execute(
       "SELECT available FROM Doctor WHERE doctor_id = ?",
-      [doctor_id]
+      [doctor_id],
     );
 
     if (!doctorStatus.length || doctorStatus[0].available !== 1) {
@@ -422,7 +452,7 @@ const createAppointment = async (req, res) => {
        AND appointment_date = ?
        AND appointment_time = ?
        AND status != 'cancelled'`,
-      [patient_id, appointment_date, formattedTime]
+      [patient_id, appointment_date, formattedTime],
     );
 
     if (patientConflict.length > 0) {
@@ -441,32 +471,25 @@ const createAppointment = async (req, res) => {
        WHERE doctor_id = ?
        AND appointment_date = ?
        AND appointment_time = ?`,
-      [doctor_id, appointment_date, formattedTime]
+      [doctor_id, appointment_date, formattedTime],
     );
 
     if (existing.length > 0) {
-
       // 🔹 reuse slot ถ้าเคย cancel
       if (existing[0].status === "cancelled") {
-
         await db.execute(
           `UPDATE Appointment
            SET patient_id = ?, status = 'confirmed'
            WHERE appointment_id = ?`,
-          [patient_id, existing[0].appointment_id]
+          [patient_id, existing[0].appointment_id],
         );
-
       } else {
-
         return res.json({
           success: false,
           message: "This time slot is already booked for the selected doctor.",
         });
-
       }
-
     } else {
-
       // =========================
       // INSERT NEW APPOINTMENT
       // =========================
@@ -475,9 +498,8 @@ const createAppointment = async (req, res) => {
         `INSERT INTO Appointment 
          (doctor_id, patient_id, appointment_date, appointment_time, status)
          VALUES (?, ?, ?, ?, 'confirmed')`,
-        [doctor_id, patient_id, appointment_date, formattedTime]
+        [doctor_id, patient_id, appointment_date, formattedTime],
       );
-
     }
 
     // =========================
@@ -486,19 +508,18 @@ const createAppointment = async (req, res) => {
 
     const [patient] = await db.execute(
       "SELECT line_user_id FROM Patient WHERE patient_id = ?",
-      [patient_id]
+      [patient_id],
     );
 
     const lineUserId = patient[0]?.line_user_id;
 
     if (lineUserId) {
-
       const [doctor] = await db.execute(
         `SELECT u.name
          FROM Doctor d
          JOIN Users u ON d.user_id = u.user_id
          WHERE d.doctor_id = ?`,
-        [doctor_id]
+        [doctor_id],
       );
 
       const doctorName = doctor[0]?.name || "Doctor";
@@ -516,26 +537,26 @@ const createAppointment = async (req, res) => {
                 type: "text",
                 text: "📅 มีการนัดหมายใหม่",
                 weight: "bold",
-                size: "xl"
+                size: "xl",
               },
               {
                 type: "separator",
-                margin: "md"
+                margin: "md",
               },
               {
                 type: "text",
                 text: `👨‍⚕️ แพทย์: ${doctorName}`,
-                margin: "lg"
+                margin: "lg",
               },
               {
                 type: "text",
-                text: `📆 วันที่: ${appointment_date}`
+                text: `📆 วันที่: ${appointment_date}`,
               },
               {
                 type: "text",
-                text: `⏰ เวลา: ${formattedTime.substring(0,5)}`
-              }
-            ]
+                text: `⏰ เวลา: ${formattedTime.substring(0, 5)}`,
+              },
+            ],
           },
           footer: {
             type: "box",
@@ -543,7 +564,7 @@ const createAppointment = async (req, res) => {
             margin: "lg",
             contents: [
               {
-                type: "separator"
+                type: "separator",
               },
               {
                 type: "text",
@@ -551,13 +572,12 @@ const createAppointment = async (req, res) => {
                 align: "center",
                 size: "sm",
                 color: "#888888",
-                margin: "md"
-              }
-            ]
-          }
-        }
+                margin: "md",
+              },
+            ],
+          },
+        },
       });
-
     }
 
     // =========================
@@ -568,16 +588,13 @@ const createAppointment = async (req, res) => {
       success: true,
       message: "Appointment created successfully",
     });
-
   } catch (error) {
-
     console.log("Create Appointment Error:", error);
 
     res.json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
