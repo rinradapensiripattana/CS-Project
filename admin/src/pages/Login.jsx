@@ -4,17 +4,20 @@ import { AdminContext } from "../context/AdminContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { DoctorContext } from "../context/DoctorContext";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [state, setState] = useState("Admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+
   // จุดที่แก้ 1: เพิ่ม state สำหรับการโชว์รหัสผ่านที่ค้างอยู่ในโค้ดเดิม
   const [showPassword, setShowPassword] = useState(false);
 
   const { setAToken, backendUrl } = useContext(AdminContext);
   const { setDToken } = useContext(DoctorContext);
+
+  const navigate = useNavigate();
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
@@ -28,6 +31,7 @@ const Login = () => {
         if (data.success) {
           localStorage.setItem("aToken", data.token);
           setAToken(data.token);
+          navigate("/admin-dashboard");
         } else {
           toast.error(data.message);
         }
@@ -39,7 +43,7 @@ const Login = () => {
         if (data.success) {
           localStorage.setItem("dToken", data.token);
           setDToken(data.token);
-          console.log(data.token);
+          navigate("/doctor-dashboard");
         } else {
           toast.error(data.message);
         }
@@ -66,7 +70,7 @@ const Login = () => {
             required
           />
         </div>
-        
+
         {/* จุดที่แก้ 3: จัดการ div ของ Password ให้ถูกต้องและเพิ่ม relative class */}
         <div className="w-full relative">
           <p>Password</p>
@@ -110,7 +114,7 @@ const Login = () => {
             </span>
           </p>
         )}
-      </div> 
+      </div>
       {/* แก้ไขปิด div ให้ครบถ้วน */}
     </form>
   );

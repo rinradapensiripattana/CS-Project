@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { DoctorContext } from "../../context/DoctorContext";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
@@ -14,6 +14,7 @@ const DoctorMedicalRecord = () => {
 
   const { appointmentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [appointmentData, setAppointmentData] = useState(null);
 
@@ -75,7 +76,9 @@ const DoctorMedicalRecord = () => {
           toast.success("Follow-up appointment created");
         }
 
-        navigate("/doctor-appointments");
+        navigate("/doctor-appointments", {
+          state: { initialViewMode: location.state?.initialViewMode || "list" },
+        });
       } else {
         toast.error(data.message);
       }
@@ -236,7 +239,6 @@ const DoctorMedicalRecord = () => {
 
         {/* Main Content Wrapper */}
         <div className="flex flex-col h-full pt-12 pb-10 px-14 relative z-10">
-          
           {/* Header */}
           <div className="text-center border-b-[3px] border-gray-800 pb-5 mb-6 mt-2">
             <h1 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-wide">
@@ -249,7 +251,8 @@ const DoctorMedicalRecord = () => {
               HelloDr. Clinic
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              เลขที่ 128/45 ถนนสุขุมวิท 77 แขวงพระโขนงเหนือ เขตวัฒนา กรุงเทพมหานคร 10260
+              เลขที่ 128/45 ถนนสุขุมวิท 77 แขวงพระโขนงเหนือ เขตวัฒนา
+              กรุงเทพมหานคร 10260
             </p>
             <p className="text-sm text-gray-600">
               โทร: 02-123-1234 | อีเมล: hellodoctor@gmail.com
@@ -267,7 +270,9 @@ const DoctorMedicalRecord = () => {
             </div>
             <p className="mt-1">
               สถานที่ประกอบวิชาชีพเวชกรรม{" "}
-              <span className="font-semibold text-lg ml-2">HelloDoctor Clinic</span>
+              <span className="font-semibold text-lg ml-2">
+                HelloDoctor Clinic
+              </span>
             </p>
           </div>
 
@@ -278,21 +283,38 @@ const DoctorMedicalRecord = () => {
             </h4>
             <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-gray-700">
               <p>
-                <span className="text-gray-500 w-24 inline-block">ชื่อ-นามสกุล:</span>
-                <span className="font-semibold text-lg text-gray-900">{appointmentData.name}</span>
+                <span className="text-gray-500 w-24 inline-block">
+                  ชื่อ-นามสกุล:
+                </span>
+                <span className="font-semibold text-lg text-gray-900">
+                  {appointmentData.name}
+                </span>
               </p>
               <p>
                 <span className="text-gray-500 w-12 inline-block">อายุ:</span>
-                <span className="font-semibold text-lg text-gray-900">{calculateAge(appointmentData.date_of_birth)}</span> ปี
+                <span className="font-semibold text-lg text-gray-900">
+                  {calculateAge(appointmentData.date_of_birth)}
+                </span>{" "}
+                ปี
               </p>
               <p>
                 <span className="text-gray-500 w-24 inline-block">เพศ:</span>
-                <span className="font-semibold text-lg text-gray-900 capitalize">{appointmentData.gender || "-"}</span>
+                <span className="font-semibold text-lg text-gray-900 capitalize">
+                  {appointmentData.gender || "-"}
+                </span>
               </p>
               <p>
-                <span className="text-gray-500 w-28 inline-block">วันที่รับการตรวจ:</span>
+                <span className="text-gray-500 w-28 inline-block">
+                  วันที่รับการตรวจ:
+                </span>
                 <span className="font-semibold text-lg text-gray-900">
-                  {new Date(appointmentData.appointment_date).toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" })}
+                  {new Date(
+                    appointmentData.appointment_date,
+                  ).toLocaleDateString("th-TH", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </span>
               </p>
             </div>
@@ -305,14 +327,18 @@ const DoctorMedicalRecord = () => {
             </h4>
 
             <div className="flex flex-col flex-1">
-              <p className="font-semibold text-gray-700 mb-2">อาการ และ การวินิจฉัยโรค (Diagnosis):</p>
+              <p className="font-semibold text-gray-700 mb-2">
+                อาการ และ การวินิจฉัยโรค (Diagnosis):
+              </p>
               <div className="flex-1 text-base whitespace-pre-line text-gray-900 leading-relaxed min-h-[60px] p-4 bg-blue-50/30 border border-blue-100 rounded-md">
                 {symptoms || "-"}
               </div>
             </div>
 
             <div className="flex flex-col flex-1">
-              <p className="font-semibold text-gray-700 mb-2">การรักษา และ คำแนะนำ (Treatment & Recommendation):</p>
+              <p className="font-semibold text-gray-700 mb-2">
+                การรักษา และ คำแนะนำ (Treatment & Recommendation):
+              </p>
               <div className="flex-1 text-base whitespace-pre-line text-gray-900 leading-relaxed min-h-[60px] p-4 bg-green-50/30 border border-green-100 rounded-md">
                 {treatment || "-"}
               </div>
@@ -328,19 +354,27 @@ const DoctorMedicalRecord = () => {
               <div className="text-center w-64">
                 <div className="border-b border-gray-500 mb-2 h-10"></div>
                 <p className="font-semibold text-base text-gray-900 mt-2">
-                  ( {profileData?.name || ".............................................................."} )
+                  ({" "}
+                  {profileData?.name ||
+                    ".............................................................."}{" "}
+                  )
                 </p>
-                <p className="text-sm text-gray-600 mt-1">แพทย์ผู้ตรวจรักษา (Attending Physician)</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  แพทย์ผู้ตรวจรักษา (Attending Physician)
+                </p>
                 <p className="text-sm text-gray-600 mt-2">
                   วันที่ออกใบรับรอง:{" "}
                   <span className="border-b border-dotted border-gray-400 px-4 inline-block text-center min-w-[100px]">
-                    {new Date().toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "2-digit" })}
+                    {new Date().toLocaleDateString("th-TH", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "2-digit",
+                    })}
                   </span>
                 </p>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </>

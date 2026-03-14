@@ -28,9 +28,18 @@ const Login = () => {
 
     if (state === "Sign Up") {
       if (!name) newErrors.name = true;
-      if (!phone || phone.length !== 10) newErrors.phone = true;
-      if (!idNumber || idNumber.length !== 13) newErrors.idNumber = true;
-      if (gender === "Not Selected") newErrors.gender = true;
+      if (!phone || phone.length !== 10) {
+        newErrors.phone = true;
+        toast.error("Phone number must be exactly 10 digits");
+      }
+      if (!idNumber || idNumber.length !== 13) {
+        newErrors.idNumber = true;
+        toast.error("ID number must be exactly 13 digits");
+      }
+      if (gender === "Not Selected") {
+        newErrors.gender = true;
+        toast.error("Please select your gender");
+      }
       if (!dob) newErrors.dob = true;
       if (!policy) {
         toast.error("Please agree to the policy");
@@ -43,6 +52,14 @@ const Login = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      if (
+        newErrors.name ||
+        newErrors.dob ||
+        newErrors.email ||
+        newErrors.password
+      ) {
+        toast.error("Please fill in all required fields");
+      }
       return;
     }
 
@@ -66,10 +83,11 @@ const Login = () => {
           toast.success("Register Success");
         } else {
           const serverErrors = {};
-          const isDuplicateEmail = data.message.toLowerCase().includes("email");
+
+          const msg = String(data.message || "").toLowerCase();
+          const isDuplicateEmail = msg.includes("email");
           const isDuplicateId =
-            data.message.toLowerCase().includes("id number") ||
-            data.message.toLowerCase().includes("id_number");
+            msg.includes("id number") || msg.includes("id_number");
 
           if (isDuplicateEmail) {
             serverErrors.email = true;
@@ -79,7 +97,9 @@ const Login = () => {
           }
 
           if (isDuplicateEmail && isDuplicateId) {
-            toast.error("This email address and id number have already been used");
+            toast.error(
+              "This email address and id number have already been used",
+            );
           } else if (isDuplicateId) {
             toast.error("This id number has already been used");
           } else if (isDuplicateEmail) {
@@ -104,7 +124,8 @@ const Login = () => {
         }
       }
     } catch (error) {
-      toast.error(error.message);
+      // ดึงข้อความ Error จริงๆ จาก Backend มาแสดง ถ้าไม่มีให้แสดง error.message ของระบบ
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -272,7 +293,10 @@ const Login = () => {
         )}
 
         {/* ================= BUTTON ================= */}
-        <button className="bg-primary text-white w-full py-2 rounded-md mt-2">
+        <button
+          type="submit"
+          className="bg-primary text-white w-full py-2 rounded-md mt-2 transition-all hover:bg-primary/90"
+        >
           {state === "Sign Up" ? "Create account" : "Login"}
         </button>
 

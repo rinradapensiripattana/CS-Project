@@ -298,27 +298,30 @@ const Dashboard = () => {
     dashData.appointmentsGraph?.forEach((item) => {
       const dateKey = getDateKey(item.date);
       if (!dataMap[dateKey]) {
-        dataMap[dateKey] = { doctors: {}, statuses: {} };
+        dataMap[dateKey] = {
+          total: 0,
+          statuses: { confirmed: 0, completed: 0, cancelled: 0 },
+          doctors: {},
+        };
       }
 
-      // Aggregate Total Counts per Doctor (Fix: use += to handle multiple status rows)
+      dataMap[dateKey].total += item.count;
+
       if (!dataMap[dateKey].doctors[item.doctor_name]) {
-        dataMap[dateKey].doctors[item.doctor_name] = 0;
-      }
-      dataMap[dateKey].doctors[item.doctor_name] += item.count;
-
-      // Aggregate Status Breakdown per Doctor
-      if (!dataMap[dateKey].statuses[item.doctor_name]) {
-        dataMap[dateKey].statuses[item.doctor_name] = {
+        dataMap[dateKey].doctors[item.doctor_name] = {
+          total: 0,
           confirmed: 0,
           completed: 0,
           cancelled: 0,
         };
       }
+      dataMap[dateKey].doctors[item.doctor_name].total += item.count;
+
       if (item.status) {
         const s = item.status.toLowerCase();
-        if (dataMap[dateKey].statuses[item.doctor_name][s] !== undefined) {
-          dataMap[dateKey].statuses[item.doctor_name][s] += item.count;
+        if (dataMap[dateKey].statuses[s] !== undefined) {
+          dataMap[dateKey].statuses[s] += item.count;
+          dataMap[dateKey].doctors[item.doctor_name][s] += item.count;
         }
       }
 
@@ -343,50 +346,48 @@ const Dashboard = () => {
       } else {
         // Key: YYYY-MM-DD
         dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-        labelWeekday = date.toLocaleDateString("en-GB", { weekday: "short" });
-        labelDayMonth = date.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-        });
+        labelWeekday =
+          dateFilter === "thisMonth"
+            ? ""
+            : date.toLocaleDateString("en-GB", { weekday: "short" });
+        labelDayMonth =
+          dateFilter === "thisMonth"
+            ? date.getDate().toString()
+            : date.toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+              });
       }
 
-      const dayData = dataMap[dateKey] || { doctors: {}, statuses: {} };
+      const dayData = dataMap[dateKey] || {
+        total: 0,
+        statuses: { confirmed: 0, completed: 0, cancelled: 0 },
+        doctors: {},
+      };
 
       let total = 0;
-      const details = {};
+      let details = {};
 
       if (selectedDoctor === "all") {
-        // Stack by Doctor
-        visibleDoctors.forEach((doc) => {
-          const count = dayData.doctors[doc] || 0;
-          if (count > 0) {
-            details[doc] = count;
-            total += count;
-          }
+        total = dayData.total;
+        allDoctors.forEach((doc) => {
+          const docTotal = dayData.doctors[doc]?.total || 0;
+          if (docTotal > 0) details[doc] = docTotal;
         });
       } else {
-        // Stack by Status for Selected Doctor
         const doc = selectedDoctor;
-        const stats = dayData.statuses[doc] || {
+        const docData = dayData.doctors[doc] || {
+          total: 0,
           confirmed: 0,
           completed: 0,
           cancelled: 0,
         };
-        const docTotal = dayData.doctors[doc] || 0;
-
-        details.confirmed = stats.confirmed;
-        details.completed = stats.completed;
-        details.cancelled = stats.cancelled;
-
-        const statusSum = stats.confirmed + stats.completed + stats.cancelled;
-
-        // If there's a discrepancy (e.g., from appointments with NULL status),
-        // add it to 'confirmed' to ensure the total count is accurate.
-        if (docTotal > statusSum) {
-          details.confirmed += docTotal - statusSum;
-        }
-
-        total = details.confirmed + details.completed + details.cancelled;
+        total = docData.total;
+        details = {
+          confirmed: docData.confirmed,
+          completed: docData.completed,
+          cancelled: docData.cancelled,
+        };
       }
 
       return {
@@ -479,7 +480,7 @@ const Dashboard = () => {
   if (!dashData) return <p className="m-5">Loading...</p>;
 
   return (
-    <div className="m-5">
+    <div className="w-full p-5">
       {/* ===== Cards ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div className="flex items-center gap-3 bg-white p-6 rounded-xl border border-gray-100 shadow-md hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
@@ -522,9 +523,9 @@ const Dashboard = () => {
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mt-4">
+      <div className="flex flex-col lg:flex-row gap-4 mt-4">
         {/* ===== Gender Chart ===== */}
-        <div className="bg-white rounded border p-6 w-full md:flex-1 shadow-md">
+        <div className="bg-white rounded border p-6 w-full lg:w-1/3 shadow-md min-w-0">
           <p className="font-semibold text-lg mb-4">Patients by Gender</p>
           <div
             className="flex justify-center py-4"
@@ -541,8 +542,8 @@ const Dashboard = () => {
         </div>
 
         {/* ===== Appointments Bar Chart (Last 7 Days) ===== */}
-        <div className="bg-white rounded border p-6 w-full md:flex-1 shadow-md">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+        <div className="bg-white rounded border p-6 w-full lg:w-2/3 flex-1 shadow-md min-w-0">
+          <div className="flex flex-col mb-4 gap-3">
             <p className="font-semibold text-lg">Appointments by Doctor</p>
 
             <div className="flex flex-wrap gap-2 items-center">
@@ -593,7 +594,7 @@ const Dashboard = () => {
           {/* Legend */}
           <div className="flex flex-wrap gap-3 mb-4 text-xs text-gray-600">
             {selectedDoctor === "all" ? (
-              visibleDoctors.map((doc) => (
+              allDoctors.map((doc) => (
                 <div key={doc} className="flex items-center gap-1">
                   <span
                     className="w-3 h-3 rounded-full"
@@ -640,56 +641,63 @@ const Dashboard = () => {
               to { transform: scaleY(1); }
             }
           `}</style>
-          <div className="relative h-64 w-full">
-            <div className="h-full flex items-end gap-2 sm:gap-4 w-full pb-2 border-b border-gray-200 relative z-10">
+          <div className="relative w-full">
+            <div className="h-64 flex items-end gap-0.5 sm:gap-1 w-full pb-2 border-b border-gray-200 relative z-10">
               {chartData.map((item, index) => (
                 <div
                   key={index}
-                  className="flex-1 flex flex-col items-center justify-end gap-2 group h-full relative"
+                  className="flex-1 flex flex-col items-center justify-end gap-1 sm:gap-2 group h-full relative min-w-0"
                 >
                   {/* Tooltip */}
                   <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 z-20 shadow-lg min-w-[120px]">
                     <p className="font-semibold border-b border-gray-600 pb-1 mb-1 text-center">
                       {item.label}
                     </p>
-                    {Object.entries(item.details).map(
-                      ([key, count], i) =>
-                        ((selectedDoctor === "all" && count > 0) ||
-                          selectedDoctor !== "all") && (
-                          <div
-                            key={key}
-                            className="flex justify-between gap-2 items-center"
-                          >
-                            <div className="flex items-center gap-1">
-                              <span
-                                className="w-2 h-2 rounded-full"
-                                style={{
-                                  backgroundColor:
-                                    selectedDoctor === "all"
-                                      ? doctorColors[
-                                          allDoctors.indexOf(key) %
-                                            doctorColors.length
-                                        ]
-                                      : statusColors[key],
-                                }}
-                              ></span>
-                              <span
-                                className={`truncate max-w-[80px] ${selectedDoctor === "all" ? "text-gray-300" : ""}`}
-                                style={{
-                                  color:
-                                    selectedDoctor === "all"
-                                      ? undefined
-                                      : statusColors[key],
-                                }}
-                              >
-                                {selectedDoctor === "all"
-                                  ? `${key}:`
-                                  : `${key.charAt(0).toUpperCase() + key.slice(1)}:`}
-                              </span>
-                            </div>
-                            <span>{count}</span>
+                    {selectedDoctor === "all" ? (
+                      Object.entries(item.details).map(([doc, count]) => (
+                        <div
+                          key={doc}
+                          className="flex justify-between gap-4 items-center"
+                        >
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  doctorColors[
+                                    allDoctors.indexOf(doc) %
+                                      doctorColors.length
+                                  ],
+                              }}
+                            ></span>
+                            <span className="truncate max-w-[100px] text-gray-300">
+                              {doc}:
+                            </span>
                           </div>
-                        ),
+                          <span>{count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="flex justify-between gap-2">
+                          <span style={{ color: statusColors.confirmed }}>
+                            Confirmed:
+                          </span>
+                          <span>{item.details.confirmed}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span style={{ color: statusColors.completed }}>
+                            Completed:
+                          </span>
+                          <span>{item.details.completed}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span style={{ color: statusColors.cancelled }}>
+                            Cancelled:
+                          </span>
+                          <span>{item.details.cancelled}</span>
+                        </div>
+                      </>
                     )}
                     <div className="w-2 h-2 bg-gray-800 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2"></div>
                   </div>
@@ -707,46 +715,57 @@ const Dashboard = () => {
                       transformOrigin: "bottom",
                     }}
                   >
-                    {selectedDoctor === "all"
-                      ? visibleDoctors.map((doc) => {
-                          const count = item.details[doc] || 0;
-                          const heightPercent =
-                            item.count > 0 ? (count / item.count) * 100 : 0;
-                          return heightPercent > 0 ? (
+                    {item.count > 0 &&
+                      (selectedDoctor === "all" ? (
+                        Object.entries(item.details).map(([doc, count]) => (
+                          <div
+                            key={doc}
+                            style={{
+                              height: `${(count / item.count) * 100}%`,
+                              backgroundColor:
+                                doctorColors[
+                                  allDoctors.indexOf(doc) % doctorColors.length
+                                ],
+                            }}
+                          ></div>
+                        ))
+                      ) : (
+                        <>
+                          {item.details.confirmed > 0 && (
                             <div
-                              key={doc}
                               style={{
-                                height: `${heightPercent}%`,
-                                backgroundColor:
-                                  doctorColors[
-                                    allDoctors.indexOf(doc) %
-                                      doctorColors.length
-                                  ],
+                                height: `${(item.details.confirmed / item.count) * 100}%`,
+                                backgroundColor: statusColors.confirmed,
                               }}
                             ></div>
-                          ) : null;
-                        })
-                      : ["confirmed", "completed", "cancelled"].map(
-                          (status) => {
-                            const count = item.details[status] || 0;
-                            const heightPercent =
-                              item.count > 0 ? (count / item.count) * 100 : 0;
-                            return heightPercent > 0 ? (
-                              <div
-                                key={status}
-                                style={{
-                                  height: `${heightPercent}%`,
-                                  backgroundColor: statusColors[status],
-                                }}
-                              ></div>
-                            ) : null;
-                          },
-                        )}
+                          )}
+                          {item.details.completed > 0 && (
+                            <div
+                              style={{
+                                height: `${(item.details.completed / item.count) * 100}%`,
+                                backgroundColor: statusColors.completed,
+                              }}
+                            ></div>
+                          )}
+                          {item.details.cancelled > 0 && (
+                            <div
+                              style={{
+                                height: `${(item.details.cancelled / item.count) * 100}%`,
+                                backgroundColor: statusColors.cancelled,
+                              }}
+                            ></div>
+                          )}
+                        </>
+                      ))}
                   </div>
 
-                  <div className="flex flex-col items-center text-[10px] sm:text-xs text-gray-500 w-full text-center mt-1">
-                    <p className="uppercase">{item.weekday}</p>
-                    <p>{item.dayMonth}</p>
+                  <div className="flex flex-col items-center text-[9px] sm:text-[11px] text-gray-500 w-full text-center mt-1 overflow-hidden">
+                    {item.weekday && (
+                      <p className="uppercase truncate w-full">
+                        {item.weekday}
+                      </p>
+                    )}
+                    <p className="truncate w-full">{item.dayMonth}</p>
                   </div>
                 </div>
               ))}
@@ -759,52 +778,76 @@ const Dashboard = () => {
       <div className="bg-white mt-10 rounded border shadow-md">
         <div className="flex items-center gap-2 px-4 py-4 border-b">
           <img src={assets.list_icon} alt="" className="w-6 h-6" />
-          <p className="font-semibold">Latest Bookings</p>
+          <p className="font-semibold">Latest Bookings (Today)</p>
         </div>
 
         <div>
-          {dashData.latestAppointments.map((item, index) => (
-            <div
-              className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100"
-              key={index}
-            >
-              {/* ✅ Default Image */}
-              <img
-                className="rounded-full w-10 h-10 object-cover"
-                src={
-                  item.doctor_image
-                    ? item.doctor_image.startsWith("http")
-                      ? item.doctor_image
-                      : `${import.meta.env.VITE_BACKEND_URL}${item.doctor_image}`
-                    : "/default_image.png"
-                }
-                alt=""
-              />
-
-              <div className="flex-1 text-sm">
-                <p className="text-gray-800 font-medium">{item.doctor_name}</p>
-
-                <p className="text-gray-600">
-                  {formatDate(item.appointment_date)} ,{" "}
-                  {item.appointment_time?.slice(0, 5)}
-                </p>
-              </div>
-
-              {/* Status */}
-              {item.status === "cancelled" ? (
-                <p className="text-red-500 text-xs font-medium">Cancelled</p>
-              ) : item.status === "completed" ? (
-                <p className="text-green-500 text-xs font-medium">Completed</p>
-              ) : (
+          {dashData.latestAppointments?.filter(
+            (item) =>
+              new Date(item.appointment_date).toDateString() ===
+              new Date().toDateString(),
+          ).length === 0 && (
+            <p className="text-gray-500 text-center py-6 text-sm">
+              No bookings for today.
+            </p>
+          )}
+          {dashData.latestAppointments
+            ?.filter(
+              (item) =>
+                new Date(item.appointment_date).toDateString() ===
+                new Date().toDateString(),
+            )
+            .sort((a, b) => {
+              const timeA = a.appointment_time || "00:00";
+              const timeB = b.appointment_time || "00:00";
+              return timeB.localeCompare(timeA); // เรียงจากเวลามากไปน้อย (ใหม่ไปเก่า)
+            })
+            .map((item, index) => (
+              <div
+                className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100"
+                key={index}
+              >
+                {/* ✅ Default Image */}
                 <img
-                  onClick={() => cancelAppointment(item.appointment_id)}
-                  className="w-8 cursor-pointer"
-                  src={assets.cancel_icon}
+                  className="rounded-full w-10 h-10 object-cover"
+                  src={
+                    item.doctor_image
+                      ? item.doctor_image.startsWith("http")
+                        ? item.doctor_image
+                        : `${import.meta.env.VITE_BACKEND_URL}${item.doctor_image}`
+                      : "/default_image.png"
+                  }
                   alt=""
                 />
-              )}
-            </div>
-          ))}
+
+                <div className="flex-1 text-sm">
+                  <p className="text-gray-800 font-medium">
+                    {item.doctor_name}
+                  </p>
+
+                  <p className="text-gray-600">
+                    {formatDate(item.appointment_date)} ,{" "}
+                    {item.appointment_time?.slice(0, 5)}
+                  </p>
+                </div>
+
+                {/* Status */}
+                {item.status === "cancelled" ? (
+                  <p className="text-red-500 text-xs font-medium">Cancelled</p>
+                ) : item.status === "completed" ? (
+                  <p className="text-green-500 text-xs font-medium">
+                    Completed
+                  </p>
+                ) : (
+                  <img
+                    onClick={() => cancelAppointment(item.appointment_id)}
+                    className="w-8 cursor-pointer"
+                    src={assets.cancel_icon}
+                    alt=""
+                  />
+                )}
+              </div>
+            ))}
         </div>
       </div>
     </div>

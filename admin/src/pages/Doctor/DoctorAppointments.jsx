@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { DoctorContext } from "../../context/DoctorContext";
 import { AppContext } from "../../context/AppContext";
 import { assets } from "../../assets/assets";
@@ -13,6 +13,7 @@ const DoctorAppointments = () => {
 
   const { calculateAge } = useContext(AppContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [activeTab, setActiveTab] = useState("upcoming");
   const [search, setSearch] = useState("");
@@ -20,7 +21,9 @@ const DoctorAppointments = () => {
   const [toDate, setToDate] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [appointments, setAppointments] = useState([]);
-  const [viewMode, setViewMode] = useState("list"); // "list" | "calendar"
+  const [viewMode, setViewMode] = useState(
+    location.state?.initialViewMode || "list",
+  ); // "list" | "calendar"
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -84,23 +87,22 @@ const DoctorAppointments = () => {
 
   // Filter by status
   const today = new Date();
-  today.setHours(0,0,0,0);
-  
+  today.setHours(0, 0, 0, 0);
+
   const filteredByStatus = appointments.filter((item) => {
-  
     const appointmentDate = new Date(item.appointment_date);
-    appointmentDate.setHours(0,0,0,0);
-  
+    appointmentDate.setHours(0, 0, 0, 0);
+
     if (activeTab === "upcoming") {
       return (
         (item.status === "confirmed" || item.status === "ongoing") &&
         appointmentDate >= today
       );
     }
-  
+
     if (activeTab === "completed") return item.status === "completed";
     if (activeTab === "cancelled") return item.status === "cancelled";
-  
+
     return true;
   });
 
@@ -384,6 +386,7 @@ const DoctorAppointments = () => {
 
                         navigate(
                           `/doctor-medical-record/${item.appointment_id}`,
+                          { state: { initialViewMode: viewMode } },
                         );
                       }}
                       className="w-8 cursor-pointer"
@@ -639,6 +642,7 @@ const DoctorAppointments = () => {
                     setShowModal(false);
                     navigate(
                       `/doctor-medical-record/${selectedAppointment.appointment_id}`,
+                      { state: { initialViewMode: viewMode } },
                     );
                   }}
                   className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"

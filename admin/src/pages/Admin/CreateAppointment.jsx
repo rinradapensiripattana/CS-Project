@@ -75,12 +75,18 @@ const CreateAppointment = () => {
 
       if (data.success) {
         toast.success(data.message);
-        setSelectedPatient("");
-        setSearchPatient("");
-        setSelectedDoctor("");
-        setSearchDoctor("");
-        setAppointmentDate("");
-        setAppointmentTime("");
+        if (location.state?.prefillDate) {
+          navigate("/all-appointments", {
+            state: { initialViewMode: "calendar" },
+          });
+        } else {
+          setSelectedPatient("");
+          setSearchPatient("");
+          setSelectedDoctor("");
+          setSearchDoctor("");
+          setAppointmentDate("");
+          setAppointmentTime("");
+        }
       } else {
         toast.error(data.message);
       }
@@ -100,7 +106,7 @@ const CreateAppointment = () => {
               state: { initialViewMode: "calendar" },
             })
           }
-          className="text-xs text-gray-500 hover:text-primary transition-colors flex items-center gap-1 mb-1"
+          className="text-xs text-blue-500 hover:text-primary transition-colors flex items-center gap-1 mb-1"
         >
           &larr; Back
         </button>

@@ -27,7 +27,7 @@ const CountUp = ({ end, duration = 1000 }) => {
 };
 
 const DoctorDashboard = () => {
-  const { dToken, cancelAppointment, setDToken } = useContext(DoctorContext);
+  const { dToken, setDToken } = useContext(DoctorContext);
   const { backendUrl, calculateAge } = useContext(AppContext);
   const navigate = useNavigate();
 
@@ -59,6 +59,44 @@ const DoctorDashboard = () => {
       }
       console.log(error);
       toast.error(error.message);
+    }
+  };
+
+  // สร้างฟังก์ชัน Cancel แยกมาไว้ในนี้เพื่อให้สามารถเรียก getDashData() รีเฟรชหน้าจอได้ทันที
+  const cancelAppointment = async (appointment_id) => {
+    try {
+      const { data } = await axios.post(
+        backendUrl + "/api/doctor/cancel-appointment",
+        { appointment_id },
+        { headers: { Authorization: `Bearer ${dToken}` } },
+      );
+      if (data.success) {
+        toast.success(data.message);
+        getDashData(); // ดึงข้อมูลใหม่เพื่ออัปเดต UI ทันที
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
+    }
+  };
+
+  // สร้างฟังก์ชัน Complete แบบทันที (ข้ามการกรอกประวัติ) พร้อมรีเฟรชหน้าจอ
+  const completeAppointment = async (appointment_id) => {
+    try {
+      const { data } = await axios.post(
+        backendUrl + "/api/doctor/complete-appointment",
+        { appointment_id, symptoms: "", treatment: "" },
+        { headers: { Authorization: `Bearer ${dToken}` } },
+      );
+      if (data.success) {
+        toast.success("Appointment Completed");
+        getDashData(); // ดึงข้อมูลใหม่เพื่ออัปเดต UI ทันที
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -133,8 +171,11 @@ const DoctorDashboard = () => {
         };
       }
       dataMap[dateKey].total += item.count;
-      if (dataMap[dateKey][item.status] !== undefined) {
-        dataMap[dateKey][item.status] += item.count;
+      if (item.status) {
+        const s = item.status.toLowerCase();
+        if (dataMap[dateKey][s] !== undefined) {
+          dataMap[dateKey][s] += item.count;
+        }
       }
     });
 
@@ -152,11 +193,17 @@ const DoctorDashboard = () => {
       } else {
         // Key: YYYY-MM-DD
         dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-        labelWeekday = date.toLocaleDateString("en-GB", { weekday: "short" });
-        labelDayMonth = date.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-        });
+        labelWeekday =
+          dateFilter === "thisMonth"
+            ? ""
+            : date.toLocaleDateString("en-GB", { weekday: "short" });
+        labelDayMonth =
+          dateFilter === "thisMonth"
+            ? date.getDate().toString()
+            : date.toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+              });
       }
 
       const dayData = dataMap[dateKey] || {
@@ -445,9 +492,9 @@ const DoctorDashboard = () => {
         </button>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mt-4">
+      <div className="flex flex-col lg:flex-row gap-4 mt-4">
         {/* ===== Gender Chart ===== */}
-        <div className="bg-white rounded border p-6 w-full md:flex-1 shadow-md">
+        <div className="bg-white rounded border p-6 w-full lg:w-1/3 shadow-md min-w-0">
           <p className="font-semibold text-lg mb-4">My Patients by Gender</p>
           <div
             className="flex justify-center py-4"
@@ -464,10 +511,10 @@ const DoctorDashboard = () => {
         </div>
 
         {/* ===== Appointments Bar Chart (Last 7 Days) ===== */}
-        <div className="bg-white rounded border p-6 w-full md:flex-1 shadow-md">
-          <p className="font-semibold text-lg mb-4">My Appointments</p>
+        <div className="bg-white rounded border p-6 w-full lg:w-2/3 flex-1 shadow-md min-w-0">
+          <div className="flex flex-col mb-4 gap-3">
+            <p className="font-semibold text-lg">My Appointments</p>
 
-          <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center mb-4 gap-2">
             <div className="flex flex-wrap gap-2 items-center">
               <select
                 className="border rounded px-2 py-1 text-sm outline-none text-gray-600"
@@ -531,12 +578,12 @@ const DoctorDashboard = () => {
               to { transform: scaleY(1); }
             }
           `}</style>
-          <div className="relative h-64 w-full">
-            <div className="h-full flex items-end gap-1 sm:gap-2 w-full pb-2 border-b border-gray-200 relative z-10">
+          <div className="relative w-full">
+            <div className="h-64 flex items-end gap-0.5 sm:gap-1 w-full pb-2 border-b border-gray-200 relative z-10">
               {chartData.map((item, index) => (
                 <div
                   key={index}
-                  className="flex-1 flex flex-col items-center justify-end gap-2 group h-full relative"
+                  className="flex-1 flex flex-col items-center justify-end gap-1 sm:gap-2 group h-full relative min-w-0"
                 >
                   {/* Tooltip */}
                   <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 z-20 shadow-lg min-w-[120px]">
@@ -607,9 +654,13 @@ const DoctorDashboard = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col items-center text-[10px] sm:text-xs text-gray-500 w-full text-center mt-1">
-                    <p className="uppercase">{item.weekday}</p>
-                    <p>{item.dayMonth}</p>
+                  <div className="flex flex-col items-center text-[9px] sm:text-[11px] text-gray-500 w-full text-center mt-1 overflow-hidden">
+                    {item.weekday && (
+                      <p className="uppercase truncate w-full">
+                        {item.weekday}
+                      </p>
+                    )}
+                    <p className="truncate w-full">{item.dayMonth}</p>
                   </div>
                 </div>
               ))}
@@ -623,94 +674,122 @@ const DoctorDashboard = () => {
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-4 border-b">
           <img src={assets.list_icon} alt="" />
-          <p className="font-semibold">Latest Bookings</p>
+          <p className="font-semibold">Latest Bookings (Today)</p>
         </div>
 
         {/* Appointment List */}
         <div>
-          {dashData.latestAppointments?.slice(0, 5).map((item) => (
-            <div
-              key={item.appointment_id}
-              className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100"
-            >
-              {/* Patient Image */}
-              <img
-                className="rounded-full w-10 h-10 object-cover"
-                src={
-                  item?.image
-                    ? item.image.startsWith("http")
-                      ? item.image
-                      : `${import.meta.env.VITE_BACKEND_URL}${item.image}`
-                    : "/default_image.png"
-                }
-                alt=""
-              />
+          {dashData.latestAppointments?.filter(
+            (item) =>
+              new Date(item.appointment_date).toDateString() ===
+              new Date().toDateString(),
+          ).length === 0 && (
+            <p className="text-gray-500 text-center py-6 text-sm">
+              No bookings for today.
+            </p>
+          )}
+          {dashData.latestAppointments
+            ?.filter(
+              (item) =>
+                new Date(item.appointment_date).toDateString() ===
+                new Date().toDateString(),
+            )
+            .sort((a, b) => {
+              const timeA = a.appointment_time || "00:00";
+              const timeB = b.appointment_time || "00:00";
+              return timeB.localeCompare(timeA); // เรียงจากเวลามากไปน้อย (ใหม่ไปเก่า)
+            })
+            .map((item) => (
+              <div
+                key={item.appointment_id}
+                className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100"
+              >
+                {/* Patient Image */}
+                <img
+                  className="rounded-full w-10 h-10 object-cover"
+                  src={
+                    item?.image
+                      ? item.image.startsWith("http")
+                        ? item.image
+                        : `${import.meta.env.VITE_BACKEND_URL}${item.image}`
+                      : "/default_image.png"
+                  }
+                  alt=""
+                />
 
-              {/* Patient Info */}
-              <div className="flex-1 text-sm">
-                <p className="text-gray-800 font-medium">{item.name}</p>
-                <p className="text-gray-600">
-                  {new Date(item.appointment_date).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}{" "}
-                  , {item.appointment_time?.slice(0, 5)}
-                </p>
-              </div>
-
-              {/* Status */}
-              {item.status === "cancelled" && (
-                <p className="text-red-400 text-xs font-medium">Cancelled</p>
-              )}
-
-              {item.status === "completed" && (
-                <p className="text-green-500 text-xs font-medium">Completed</p>
-              )}
-
-              {/* Action Buttons */}
-              {item.status === "confirmed" && (
-                <div className="flex gap-2">
-                  {/* Cancel */}
-                  <img
-                    onClick={() => cancelAppointment(item.appointment_id)}
-                    className="w-8 cursor-pointer"
-                    src={assets.cancel_icon}
-                    alt=""
-                  />
-
-                  {/* Go to Medical Record */}
-                  <img
-                    onClick={() => {
-                      const appointmentDateTime = new Date(
-                        item.appointment_date,
-                      );
-                      if (!item.appointment_time) {
-                        toast.error("Appointment time is missing.");
-                        return;
-                      }
-                      const [hours, minutes] = item.appointment_time.split(":");
-                      appointmentDateTime.setHours(hours, minutes, 0, 0);
-
-                      // Allow access 30 minutes before the appointment
-                      const allowedTime = new Date(
-                        appointmentDateTime.getTime() - 30 * 60 * 1000,
-                      );
-
-                      if (new Date() < allowedTime) {
-                        toast.error("ยังไม่ถึงเวลานัดหมาย");
-                        return;
-                      }
-                      navigate(`/doctor-medical-record/${item.appointment_id}`);
-                    }}
-                    className="w-8 cursor-pointer"
-                    src={assets.tick_icon}
-                    alt=""
-                  />
+                {/* Patient Info */}
+                <div className="flex-1 text-sm">
+                  <p className="text-gray-800 font-medium">{item.name}</p>
+                  <p className="text-gray-600">
+                    {new Date(item.appointment_date).toLocaleDateString(
+                      "en-GB",
+                      {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    )}{" "}
+                    , {item.appointment_time?.slice(0, 5)}
+                  </p>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {/* Status */}
+                {item.status === "cancelled" && (
+                  <p className="text-red-400 text-xs font-medium">Cancelled</p>
+                )}
+
+                {item.status === "completed" && (
+                  <p className="text-green-500 text-xs font-medium">
+                    Completed
+                  </p>
+                )}
+
+                {/* Action Buttons */}
+                {item.status === "confirmed" && (
+                  <div className="flex gap-2">
+                    {/* Cancel */}
+                    <img
+                      onClick={() => cancelAppointment(item.appointment_id)}
+                      className="w-8 cursor-pointer"
+                      src={assets.cancel_icon}
+                      alt=""
+                    />
+
+                    {/* Go to Medical Record */}
+                    <img
+                      onClick={() => {
+                        const appointmentDateTime = new Date(
+                          item.appointment_date,
+                        );
+                        if (!item.appointment_time) {
+                          toast.error("Appointment time is missing.");
+                          return;
+                        }
+                        const [hours, minutes] =
+                          item.appointment_time.split(":");
+                        appointmentDateTime.setHours(hours, minutes, 0, 0);
+
+                        // Allow access 30 minutes before the appointment
+                        const allowedTime = new Date(
+                          appointmentDateTime.getTime() - 30 * 60 * 1000,
+                        );
+
+                        if (new Date() < allowedTime) {
+                          toast.error("ยังไม่ถึงเวลานัดหมาย");
+                          return;
+                        }
+
+                        // เรียกใช้ฟังก์ชันให้เปลี่ยนสถานะทันที (Quick Complete)
+                        completeAppointment(item.appointment_id);
+                      }}
+                      className="w-8 cursor-pointer"
+                      src={assets.tick_icon}
+                      alt=""
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
         </div>
       </div>
     </div>
