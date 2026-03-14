@@ -9,12 +9,12 @@ const Sidebar = () => {
   const { dToken } = useContext(DoctorContext);
 
   return (
-    <div className="sticky top-0 h-screen bg-white border-r print:hidden">
+    <div className="min-h-screen bg-white border-r">
       {aToken && (
         <ul className="text-[#515151] mt-5">
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/admin-dashboard"}
           >
@@ -24,7 +24,7 @@ const Sidebar = () => {
 
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/all-appointments"}
           >
@@ -34,7 +34,7 @@ const Sidebar = () => {
 
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/create-appointment"}
           >
@@ -44,7 +44,7 @@ const Sidebar = () => {
 
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/add-doctor"}
           >
@@ -54,7 +54,7 @@ const Sidebar = () => {
 
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/doctor-list"}
           >
@@ -67,7 +67,7 @@ const Sidebar = () => {
         <ul className="text-[#515151] mt-5">
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/doctor-dashboard"}
           >
@@ -77,7 +77,7 @@ const Sidebar = () => {
 
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/doctor-appointments"}
           >
@@ -87,7 +87,7 @@ const Sidebar = () => {
 
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/doctor-patient"}
           >
@@ -97,7 +97,7 @@ const Sidebar = () => {
 
           <NavLink
             className={({ isActive }) =>
-              `flex items-center gap-3 py-3.5 px-3 md:px-9 md:min-w-64 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
+              `flex items-center gap-3 py-3.5 px-3 md:px- md:min-w-72 cursor-pointer ${isActive ? "bg-[#D5DDE2] border-r-4 border-primary" : ""}`
             }
             to={"/doctor-profile"}
           >

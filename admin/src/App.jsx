@@ -27,7 +27,9 @@ const App = () => {
       <ToastContainer />
       <Navbar />
       <div className="flex items-start">
-        <Sidebar />
+        <div className="print:hidden">
+          <Sidebar />
+        </div>
         <Routes>
           {/* Admin */}
           <Route path="/" element={<></>} />
@@ -40,7 +42,7 @@ const App = () => {
           {/* Doctor */}
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
           <Route path="/doctor-appointments" element={<DoctorAppointments />} />
-        
+
           <Route path="/doctor-profile" element={<DoctorProfile />} />
           <Route
             path="/doctor-medical-record/:appointmentId"
