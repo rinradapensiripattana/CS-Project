@@ -4,12 +4,12 @@ import { NavLink } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { DoctorContext } from "../context/DoctorContext";
 
-const Sidebar = () => {
+const Sidebar = ({ className = "" }) => {
   const { aToken } = useContext(AdminContext);
   const { dToken } = useContext(DoctorContext);
 
   return (
-    <div className="min-h-screen bg-white border-r">
+    <div className={`min-h-screen bg-white border-r ${className}`}>
       {aToken && (
         <ul className="text-[#515151] mt-5">
           <NavLink
