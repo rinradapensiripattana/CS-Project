@@ -13,7 +13,7 @@ const CreateAppointment = () => {
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
-  // ดึงค่า prefillDate จาก state ถ้ามี
+
   const [appointmentDate, setAppointmentDate] = useState(
     location.state?.prefillDate || "",
   );
@@ -23,6 +23,20 @@ const CreateAppointment = () => {
   const [showPatientList, setShowPatientList] = useState(false);
   const [searchDoctor, setSearchDoctor] = useState("");
   const [showDoctorList, setShowDoctorList] = useState(false);
+
+  const [bookedTimes, setBookedTimes] = useState([]);
+
+  // generate time slot 09:00 - 20:30
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 9; hour <= 20; hour++) {
+      ["00", "30"].forEach((minute) => {
+        const time = `${String(hour).padStart(2, "0")}:${minute}`;
+        slots.push(time);
+      });
+    }
+    return slots;
+  };
 
   const fetchAllPatients = async () => {
     try {
@@ -37,12 +51,42 @@ const CreateAppointment = () => {
     }
   };
 
+  const fetchBookedTimes = async (date, doctorId) => {
+    if (!date || !doctorId) return;
+
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/admin/booked-times`,
+        {
+          params: {
+            date: appointmentDate,
+            doctorId: selectedDoctor,
+            patientId: selectedPatient
+          },
+          headers: { atoken: aToken },
+        },
+      );
+
+      if (data.success) {
+        setBookedTimes(data.times);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     if (aToken) {
       getAllDoctors();
       fetchAllPatients();
     }
   }, [aToken]);
+
+  useEffect(() => {
+    if (appointmentDate && selectedDoctor) {
+      fetchBookedTimes(appointmentDate, selectedDoctor);
+    }
+  }, [appointmentDate, selectedDoctor]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,6 +119,7 @@ const CreateAppointment = () => {
 
       if (data.success) {
         toast.success(data.message);
+
         if (location.state?.prefillDate) {
           navigate("/all-appointments", {
             state: { initialViewMode: "calendar" },
@@ -97,7 +142,7 @@ const CreateAppointment = () => {
 
   return (
     <form onSubmit={handleSubmit} className="m-5 w-full max-w-2xl">
-      {/* แสดงปุ่ม Back ถ้ามาจาหน้า Calendar */}
+
       {location.state?.prefillDate && (
         <button
           type="button"
@@ -115,36 +160,25 @@ const CreateAppointment = () => {
       <p className="text-lg font-medium mb-4">Create New Appointment</p>
 
       <div className="bg-white px-6 py-8 border rounded space-y-4 text-sm text-gray-600">
+
+        {/* PATIENT */}
         <div className="relative">
           <p className="mb-1 font-medium">Select Patient</p>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search Patient"
-              value={searchPatient}
-              onChange={(e) => {
-                setSearchPatient(e.target.value);
-                setSelectedPatient("");
-                setShowPatientList(true);
-              }}
-              onFocus={() => setShowPatientList(true)}
-              onBlur={() => setTimeout(() => setShowPatientList(false), 200)}
-              className="w-full border rounded px-3 py-2 outline-primary pr-10"
-            />
-            {searchPatient && (
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setSearchPatient("");
-                  setSelectedPatient("");
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-xl font-bold"
-              >
-                ×
-              </button>
-            )}
-          </div>
+
+          <input
+            type="text"
+            placeholder="Search Patient"
+            value={searchPatient}
+            onChange={(e) => {
+              setSearchPatient(e.target.value);
+              setSelectedPatient("");
+              setShowPatientList(true);
+            }}
+            onFocus={() => setShowPatientList(true)}
+            onBlur={() => setTimeout(() => setShowPatientList(false), 200)}
+            className="w-full border rounded px-3 py-2 outline-primary"
+          />
+
           {showPatientList && (
             <div className="absolute z-10 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto mt-1">
               {patients
@@ -175,36 +209,24 @@ const CreateAppointment = () => {
           )}
         </div>
 
+        {/* DOCTOR */}
         <div className="relative">
           <p className="mb-1 font-medium">Select Doctor</p>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search Doctor"
-              value={searchDoctor}
-              onChange={(e) => {
-                setSearchDoctor(e.target.value);
-                setSelectedDoctor("");
-                setShowDoctorList(true);
-              }}
-              onFocus={() => setShowDoctorList(true)}
-              onBlur={() => setTimeout(() => setShowDoctorList(false), 200)}
-              className="w-full border rounded px-3 py-2 outline-primary pr-10"
-            />
-            {searchDoctor && (
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setSearchDoctor("");
-                  setSelectedDoctor("");
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-xl font-bold"
-              >
-                ×
-              </button>
-            )}
-          </div>
+
+          <input
+            type="text"
+            placeholder="Search Doctor"
+            value={searchDoctor}
+            onChange={(e) => {
+              setSearchDoctor(e.target.value);
+              setSelectedDoctor("");
+              setShowDoctorList(true);
+            }}
+            onFocus={() => setShowDoctorList(true)}
+            onBlur={() => setTimeout(() => setShowDoctorList(false), 200)}
+            className="w-full border rounded px-3 py-2 outline-primary"
+          />
+
           {showDoctorList && (
             <div className="absolute z-10 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto mt-1">
               {doctors
@@ -228,11 +250,14 @@ const CreateAppointment = () => {
           )}
         </div>
 
+        {/* DATE + TIME */}
         <div>
           <label className="font-medium text-gray-600">
             Appointment Date & Time
           </label>
+
           <div className="flex gap-4 mt-2">
+
             <input
               type="date"
               value={appointmentDate}
@@ -240,23 +265,35 @@ const CreateAppointment = () => {
               className="border rounded px-4 py-2 outline-primary"
               min={new Date().toISOString().split("T")[0]}
             />
-            <input
-              type="time"
+
+            <select
               value={appointmentTime}
               onChange={(e) => setAppointmentTime(e.target.value)}
-              className="border rounded px-4 py-2 outline-primary"
-            />
+              className="border rounded pl-4 pr-10 py-2 outline-primary appearance-none bg-white
+             bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E')] 
+             bg-[length:16px] bg-[right_12px_center] bg-no-repeat"
+            >
+              <option value="">Select Time</option>
+              {generateTimeSlots()
+                .filter((time) => !bookedTimes.includes(time))
+                .map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+            </select>
+
           </div>
         </div>
 
-        {/* Save Button */}
         <button
           type="submit"
           className="bg-primary text-white px-10 py-3 rounded-full mt-4
-                       hover:bg-primary/90 transition-all mx-auto block"
+                     hover:bg-primary/90 transition-all mx-auto block"
         >
           Save Appointment
         </button>
+
       </div>
     </form>
   );

@@ -8,6 +8,7 @@ import {
   doctorProfile,
   updateDoctorProfile,
   doctorList,
+  getBookedTimes
 } from "../controllers/doctorController.js";
 
 import authDoctor from "../middleware/authDoctor.js";
@@ -30,5 +31,6 @@ doctorRouter.post(
   upload.single("image"),
   updateDoctorProfile,
 );
+doctorRouter.get("/booked-times", authDoctor, getBookedTimes);
 
 export default doctorRouter;

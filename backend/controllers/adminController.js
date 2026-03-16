@@ -524,6 +524,21 @@ const createAppointment = async (req, res) => {
 
       const doctorName = doctor[0]?.name || "Doctor";
 
+      // =========================
+      // FORMAT DATE + TIME (THAI)
+      // =========================
+
+      const formattedDate = new Date(appointment_date).toLocaleDateString(
+        "th-TH",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      );
+
+      const formattedTimeDisplay = formattedTime.substring(0, 5);
+
       await lineClient.pushMessage(lineUserId, {
         type: "flex",
         altText: "มีการนัดหมายใหม่",
@@ -550,11 +565,11 @@ const createAppointment = async (req, res) => {
               },
               {
                 type: "text",
-                text: `📆 วันที่: ${appointment_date}`,
+                text: `📆 วันที่: ${formattedDate}`,
               },
               {
                 type: "text",
-                text: `⏰ เวลา: ${formattedTime.substring(0, 5)}`,
+                text: `⏰ เวลา: ${formattedTimeDisplay}`,
               },
             ],
           },
@@ -598,6 +613,39 @@ const createAppointment = async (req, res) => {
   }
 };
 
+const getBookedTimes = async (req, res) => {
+  try {
+
+    const { date, doctorId, patientId } = req.query;
+
+    const [appointments] = await db.query(
+      `SELECT TIME_FORMAT(appointment_time,'%H:%i') as time
+       FROM Appointment
+       WHERE appointment_date = ?
+       AND (doctor_id = ? OR patient_id = ?)
+       AND status != 'cancelled'`,
+      [date, doctorId, patientId]
+    );
+
+    const times = appointments.map(a => a.time);
+
+    res.json({
+      success: true,
+      times
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.json({
+      success:false,
+      message:error.message
+    });
+
+  }
+};
+
 export {
   addDoctor,
   loginAdmin,
@@ -608,4 +656,5 @@ export {
   changeAvailability,
   getAllPatients,
   createAppointment,
+  getBookedTimes
 };

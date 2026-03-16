@@ -87,6 +87,8 @@ const appointmentsDoctor = async (req, res) => {
             a.appointment_id,
             a.appointment_date,
             a.appointment_time,
+            a.doctor_id,
+            a.patient_id,
             a.status,
             u.name,
             u.image, 
@@ -800,6 +802,37 @@ const appointmentCancel = async (req, res) => {
   }
 };
 
+const getBookedTimes = async (req, res) => {
+  try {
+
+    const { date, doctorId, patientId } = req.query;
+
+    const [appointments] = await db.query(
+      `SELECT TIME_FORMAT(appointment_time,'%H:%i') as time
+       FROM Appointment
+       WHERE appointment_date = ?
+       AND (doctor_id = ? OR patient_id = ?)
+       AND status != 'cancelled'`,
+      [date, doctorId, patientId]
+    );
+
+    const times = appointments.map(a => a.time);
+
+    res.json({
+      success: true,
+      times
+    });
+
+  } catch (error) {
+
+    res.json({
+      success:false,
+      message:error.message
+    });
+
+  }
+};
+
 export {
   loginDoctor,
   appointmentComplete,
@@ -809,4 +842,5 @@ export {
   doctorProfile,
   updateDoctorProfile,
   doctorList,
+  getBookedTimes
 };

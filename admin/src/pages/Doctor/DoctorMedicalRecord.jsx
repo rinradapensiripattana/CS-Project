@@ -24,6 +24,46 @@ const DoctorMedicalRecord = () => {
   // follow-up
   const [followupDate, setFollowupDate] = useState("");
   const [followupTime, setFollowupTime] = useState("");
+  const [bookedTimes, setBookedTimes] = useState([]);
+
+  const generateTimeSlots = () => {
+    const slots = [];
+
+    for (let hour = 9; hour <= 20; hour++) {
+      ["00", "30"].forEach((minute) => {
+        const time = `${String(hour).padStart(2, "0")}:${minute}`;
+        slots.push(time);
+      });
+    }
+
+    return slots;
+  };
+
+  const fetchBookedTimes = async (date) => {
+    if (!date || !appointmentData?.doctor_id) return;
+
+    try {
+      const { data } = await axios.get(
+        backendUrl + "/api/doctor/booked-times",
+        {
+          params: {
+            date: date,
+            doctorId: appointmentData.doctor_id,
+            patientId: appointmentData.patient_id,
+          },
+          headers: {
+            Authorization: `Bearer ${dToken}`,
+          },
+        }
+      );
+
+      if (data.success) {
+        setBookedTimes(data.times);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   // โหลด appointment
   useEffect(() => {
@@ -48,10 +88,27 @@ const DoctorMedicalRecord = () => {
     }
   }, [appointments, appointmentId]);
 
+  useEffect(() => {
+    if (followupDate && appointmentData?.doctor_id) {
+      fetchBookedTimes(followupDate);
+    }
+  }, [followupDate, appointmentData]);
+
   // save medical record
   const onSubmitHandler = async (e) => {
     e.preventDefault();
-
+  
+    // ✅ ตรวจสอบ follow-up
+    if (followupDate && !followupTime) {
+      toast.error("Please select follow-up time");
+      return;
+    }
+  
+    if (!followupDate && followupTime) {
+      toast.error("Please select follow-up date");
+      return;
+    }
+  
     try {
       const { data } = await axios.post(
         backendUrl + "/api/doctor/complete-appointment",
@@ -66,16 +123,17 @@ const DoctorMedicalRecord = () => {
           headers: {
             Authorization: `Bearer ${dToken}`,
           },
-        },
+        }
       );
-
+  
       if (data.success) {
         toast.success("Appointment Completed");
-
-        if (followupDate) {
+  
+        // แจ้ง follow-up เฉพาะเมื่อเลือกครบ
+        if (followupDate && followupTime) {
           toast.success("Follow-up appointment created");
         }
-
+  
         navigate("/doctor-appointments", {
           state: { initialViewMode: location.state?.initialViewMode || "list" },
         });
@@ -175,12 +233,28 @@ const DoctorMedicalRecord = () => {
                   min={new Date().toISOString().split("T")[0]}
                 />
 
-                <input
-                  type="time"
+                <select
                   value={followupTime}
                   onChange={(e) => setFollowupTime(e.target.value)}
-                  className="border rounded px-4 py-2 outline-primary"
-                />
+                  /* แก้ไข className และเพิ่ม inline style ตามด้านล่างนี้ */
+                  className="border rounded pl-4 pr-10 py-2 outline-primary appearance-none bg-white"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.8rem center',
+                    backgroundSize: '1em'
+                  }}
+                >
+                  <option value="">Select Time</option>
+
+                  {generateTimeSlots()
+                    .filter((time) => !bookedTimes.includes(time))
+                    .map((time) => (
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
+                    ))}
+                </select>
               </div>
             </div>
 
