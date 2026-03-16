@@ -152,6 +152,19 @@ const DoctorMedicalRecord = () => {
       {/* SCREEN UI (ซ่อนตอนปริ้นท์) */}
       {/* ===================== */}
       <div className="m-5 w-full max-w-5xl print:hidden">
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/doctor-appointments", {
+              state: {
+                initialViewMode: location.state?.initialViewMode || "list",
+              },
+            })
+          }
+          className="text-sm text-blue-500 hover:text-primary transition-colors flex items-center gap-1 mb-3 font-medium"
+        >
+          &larr; Back
+        </button>
         <h2 className="text-lg font-medium mb-4">Medical Record & Treatment</h2>
 
         <div className="bg-white p-8 border rounded shadow-sm">
