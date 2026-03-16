@@ -55,17 +55,14 @@ const CreateAppointment = () => {
     if (!date || !doctorId) return;
 
     try {
-      const { data } = await axios.get(
-        `${backendUrl}/api/admin/booked-times`,
-        {
-          params: {
-            date: appointmentDate,
-            doctorId: selectedDoctor,
-            patientId: selectedPatient
-          },
-          headers: { atoken: aToken },
+      const { data } = await axios.get(`${backendUrl}/api/admin/booked-times`, {
+        params: {
+          date: appointmentDate,
+          doctorId: selectedDoctor,
+          patientId: selectedPatient,
         },
-      );
+        headers: { atoken: aToken },
+      });
 
       if (data.success) {
         setBookedTimes(data.times);
@@ -142,7 +139,6 @@ const CreateAppointment = () => {
 
   return (
     <form onSubmit={handleSubmit} className="m-5 w-full max-w-2xl">
-
       {location.state?.prefillDate && (
         <button
           type="button"
@@ -160,24 +156,38 @@ const CreateAppointment = () => {
       <p className="text-lg font-medium mb-4">Create New Appointment</p>
 
       <div className="bg-white px-6 py-8 border rounded space-y-4 text-sm text-gray-600">
-
         {/* PATIENT */}
         <div className="relative">
           <p className="mb-1 font-medium">Select Patient</p>
 
-          <input
-            type="text"
-            placeholder="Search Patient"
-            value={searchPatient}
-            onChange={(e) => {
-              setSearchPatient(e.target.value);
-              setSelectedPatient("");
-              setShowPatientList(true);
-            }}
-            onFocus={() => setShowPatientList(true)}
-            onBlur={() => setTimeout(() => setShowPatientList(false), 200)}
-            className="w-full border rounded px-3 py-2 outline-primary"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search Patient"
+              value={searchPatient}
+              onChange={(e) => {
+                setSearchPatient(e.target.value);
+                setSelectedPatient("");
+                setShowPatientList(true);
+              }}
+              onFocus={() => setShowPatientList(true)}
+              onBlur={() => setTimeout(() => setShowPatientList(false), 200)}
+              className="w-full border rounded px-3 py-2 outline-primary pr-8"
+            />
+            {searchPatient && (
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault(); // ป้องกันการเสีย focus เพื่อไม่ให้ onBlur ทำงานขัดจังหวะ
+                  setSearchPatient("");
+                  setSelectedPatient("");
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 font-bold text-lg leading-none"
+              >
+                &times;
+              </button>
+            )}
+          </div>
 
           {showPatientList && (
             <div className="absolute z-10 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto mt-1">
@@ -213,19 +223,34 @@ const CreateAppointment = () => {
         <div className="relative">
           <p className="mb-1 font-medium">Select Doctor</p>
 
-          <input
-            type="text"
-            placeholder="Search Doctor"
-            value={searchDoctor}
-            onChange={(e) => {
-              setSearchDoctor(e.target.value);
-              setSelectedDoctor("");
-              setShowDoctorList(true);
-            }}
-            onFocus={() => setShowDoctorList(true)}
-            onBlur={() => setTimeout(() => setShowDoctorList(false), 200)}
-            className="w-full border rounded px-3 py-2 outline-primary"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search Doctor"
+              value={searchDoctor}
+              onChange={(e) => {
+                setSearchDoctor(e.target.value);
+                setSelectedDoctor("");
+                setShowDoctorList(true);
+              }}
+              onFocus={() => setShowDoctorList(true)}
+              onBlur={() => setTimeout(() => setShowDoctorList(false), 200)}
+              className="w-full border rounded px-3 py-2 outline-primary pr-8"
+            />
+            {searchDoctor && (
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault(); // ป้องกันการเสีย focus
+                  setSearchDoctor("");
+                  setSelectedDoctor("");
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 font-bold text-lg leading-none"
+              >
+                &times;
+              </button>
+            )}
+          </div>
 
           {showDoctorList && (
             <div className="absolute z-10 w-full bg-white border rounded shadow-lg max-h-60 overflow-y-auto mt-1">
@@ -257,7 +282,6 @@ const CreateAppointment = () => {
           </label>
 
           <div className="flex gap-4 mt-2">
-
             <input
               type="date"
               value={appointmentDate}
@@ -282,7 +306,6 @@ const CreateAppointment = () => {
                   </option>
                 ))}
             </select>
-
           </div>
         </div>
 
@@ -293,7 +316,6 @@ const CreateAppointment = () => {
         >
           Save Appointment
         </button>
-
       </div>
     </form>
   );
