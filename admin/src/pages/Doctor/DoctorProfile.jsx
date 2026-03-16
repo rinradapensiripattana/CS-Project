@@ -9,20 +9,25 @@ const DoctorProfile = () => {
     useContext(DoctorContext);
   const { backendUrl } = useContext(AppContext);
   const [isEdit, setIsEdit] = useState(false);
+  const [image, setImage] = useState(null);
 
   const updateProfile = async () => {
     try {
-      const updateData = {
-        about: profileData.about,
-        available: profileData.available,
-        experience: profileData.experience,
-      };
+      const formData = new FormData();
+      formData.append("name", profileData.name);
+      formData.append("about", profileData.about);
+      formData.append("available", profileData.available ? "1" : "0");
+      formData.append("experience", profileData.experience);
+
+      if (image) {
+        formData.append("image", image);
+      }
 
       const token = localStorage.getItem("dToken");
 
       const { data } = await axios.post(
-        "http://localhost:4000/api/doctor/update-profile",
-        updateData,
+        backendUrl + "/api/doctor/update-profile",
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -33,6 +38,7 @@ const DoctorProfile = () => {
       if (data.success) {
         toast.success(data.message);
         setIsEdit(false);
+        setImage(null);
         getProfileData();
       } else {
         toast.error(data.message);
@@ -61,31 +67,90 @@ const DoctorProfile = () => {
 
           <div className="relative mb-6 group">
             <div className="absolute inset-0 bg-primary/20 rounded-full blur-2xl opacity-0 group-hover:opacity-70 transition-opacity duration-500"></div>
-            <img
-              className="w-48 h-48 sm:w-56 sm:h-56 object-cover rounded-full border-[6px] border-white shadow-lg relative z-10"
-              src={
-                profileData.image
-                  ? profileData.image.startsWith("http")
-                    ? profileData.image
-                    : `${backendUrl}${profileData.image}`
-                  : "/default_image.png"
+            <label
+              htmlFor="image-upload"
+              className={
+                isEdit
+                  ? "cursor-pointer relative z-10 block"
+                  : "relative z-10 block"
               }
-              onError={(e) => (e.target.src = "/default_image.png")}
-              alt={profileData.name}
-            />
+            >
+              <div className="relative inline-block">
+                <img
+                  className={`w-48 h-48 sm:w-56 sm:h-56 object-cover rounded-full border-[6px] border-white shadow-lg transition-all ${isEdit ? "opacity-80" : ""}`}
+                  src={
+                    image
+                      ? URL.createObjectURL(image)
+                      : profileData.image
+                        ? profileData.image.startsWith("http")
+                          ? profileData.image
+                          : `${backendUrl}${profileData.image}`
+                        : "/default_image.png"
+                  }
+                  onError={(e) => (e.target.src = "/default_image.png")}
+                  alt={profileData.name}
+                />
+                {isEdit && (
+                  <div className="absolute inset-0 flex items-center justify-center text-white bg-black/30 rounded-full font-medium text-sm transition-opacity opacity-0 hover:opacity-100">
+                    Upload Photo
+                  </div>
+                )}
+              </div>
+            </label>
+            {isEdit && (
+              <input
+                type="file"
+                id="image-upload"
+                hidden
+                accept="image/*"
+                onChange={(e) => setImage(e.target.files[0])}
+              />
+            )}
           </div>
 
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 tracking-tight">
-            {profileData.name}
-          </h2>
+          {isEdit ? (
+            <input
+              type="text"
+              className="text-3xl sm:text-4xl font-bold text-gray-800 tracking-tight text-center border-b-2 border-gray-300 focus:border-primary outline-none bg-transparent w-[90%] pb-1"
+              value={profileData.name}
+              onChange={(e) =>
+                setProfileData((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+          ) : (
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 tracking-tight">
+              {profileData.name}
+            </h2>
+          )}
           <p className="text-lg text-primary font-medium mt-2">
             {profileData.degree}
           </p>
 
           <div className="mt-4 inline-flex items-center px-4 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm">
-            <span className="text-sm font-semibold text-gray-700">
-              {profileData.experience} Years Experience
-            </span>
+            {isEdit ? (
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  className="w-12 text-center text-sm font-semibold text-primary outline-none bg-gray-50 border border-gray-300 rounded mr-2"
+                  value={profileData.experience}
+                  onChange={(e) =>
+                    setProfileData((prev) => ({
+                      ...prev,
+                      experience: e.target.value,
+                    }))
+                  }
+                  min="0"
+                  max="50"
+                />
+                <span className="text-sm font-semibold text-gray-700">
+                  Years Experience
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm font-semibold text-gray-700">
+                {profileData.experience} Years Experience
+              </span>
+            )}
           </div>
         </div>
 
@@ -162,7 +227,11 @@ const DoctorProfile = () => {
             {isEdit ? (
               <div className="flex gap-4">
                 <button
-                  onClick={() => setIsEdit(false)}
+                  onClick={() => {
+                    setIsEdit(false);
+                    setImage(null);
+                    getProfileData(); // Reset ข้อมูลกลับไปเป็นของเดิมจาก Database
+                  }}
                   className="px-8 py-3 border-2 border-gray-200 text-gray-500 rounded-full font-semibold hover:bg-gray-50 hover:text-gray-700 transition-all active:scale-95"
                 >
                   Cancel

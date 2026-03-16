@@ -12,18 +12,17 @@ const lineClient = new line.Client({
 // FORMAT DATE + TIME (THAI)
 // ==========================
 const formatDateTime = (date, time) => {
-
   const formattedDate = new Date(date).toLocaleDateString("th-TH", {
     year: "numeric",
     month: "long",
-    day: "numeric"
+    day: "numeric",
   });
 
   const formattedTime = time ? time.slice(0, 5) : "-";
 
   return {
     date: formattedDate,
-    time: formattedTime
+    time: formattedTime,
   };
 };
 
@@ -211,25 +210,26 @@ const appointmentComplete = async (req, res) => {
     // ดึง line user
     const [patient] = await db.query(
       "SELECT line_user_id FROM Patient WHERE patient_id = ?",
-      [appointment.patient_id]
+      [appointment.patient_id],
     );
 
     const lineUserId = patient[0]?.line_user_id;
 
     if (lineUserId) {
-
       const [doctorName] = await db.query(
         `SELECT u.name
      FROM Doctor d
      JOIN Users u ON d.user_id = u.user_id
      WHERE d.doctor_id = ?`,
-        [appointment.doctor_id]
+        [appointment.doctor_id],
       );
 
       const name = doctorName[0]?.name || "Doctor";
 
-      const { date: formattedDate, time: formattedTime } =
-        formatDateTime(appointment.appointment_date, appointment.appointment_time);
+      const { date: formattedDate, time: formattedTime } = formatDateTime(
+        appointment.appointment_date,
+        appointment.appointment_time,
+      );
 
       await lineClient.pushMessage(lineUserId, {
         type: "flex",
@@ -245,45 +245,45 @@ const appointmentComplete = async (req, res) => {
                 type: "text",
                 text: "📋 ผลการรักษา",
                 weight: "bold",
-                size: "xl"
-              },
-              {
-                type: "separator"
-              },
-              {
-                type: "text",
-                text: `👨‍⚕️ แพทย์: ${name}`
-              },
-              {
-                type: "text",
-                text: `📅 วันที่: ${formattedDate}`
-              },
-              {
-                type: "text",
-                text: `⏰ เวลา: ${formattedTime}`
+                size: "xl",
               },
               {
                 type: "separator",
-                margin: "md"
+              },
+              {
+                type: "text",
+                text: `👨‍⚕️ แพทย์: ${name}`,
+              },
+              {
+                type: "text",
+                text: `📅 วันที่: ${formattedDate}`,
+              },
+              {
+                type: "text",
+                text: `⏰ เวลา: ${formattedTime}`,
+              },
+              {
+                type: "separator",
+                margin: "md",
               },
               {
                 type: "text",
                 text: `🩺 อาการ: ${symptoms || "-"}`,
-                wrap: true
+                wrap: true,
               },
               {
                 type: "text",
                 text: `💊 วิธีการรักษา: ${treatment || "-"}`,
-                wrap: true
-              }
-            ]
+                wrap: true,
+              },
+            ],
           },
           footer: {
             type: "box",
             layout: "vertical",
             contents: [
               {
-                type: "separator"
+                type: "separator",
               },
               {
                 type: "text",
@@ -291,13 +291,12 @@ const appointmentComplete = async (req, res) => {
                 align: "center",
                 size: "sm",
                 color: "#888888",
-                margin: "md"
-              }
-            ]
-          }
-        }
+                margin: "md",
+              },
+            ],
+          },
+        },
       });
-
     }
 
     // =========================
@@ -392,8 +391,10 @@ const appointmentComplete = async (req, res) => {
 
         const name = doctorName[0]?.name || "Doctor";
 
-        const { date: formattedDate, time: formattedTime } =
-          formatDateTime(followup_date, followup_time);
+        const { date: formattedDate, time: formattedTime } = formatDateTime(
+          followup_date,
+          followup_time,
+        );
 
         await lineClient.pushMessage(lineUserId, {
           type: "flex",
@@ -421,11 +422,11 @@ const appointmentComplete = async (req, res) => {
                 },
                 {
                   type: "text",
-                  text: `📆 วันที่: ${formattedDate}`
+                  text: `📆 วันที่: ${formattedDate}`,
                 },
                 {
                   type: "text",
-                  text: `⏰ เวลา: ${formattedTime}`
+                  text: `⏰ เวลา: ${formattedTime}`,
                 },
               ],
             },
@@ -443,15 +444,12 @@ const appointmentComplete = async (req, res) => {
                   align: "center",
                   size: "sm",
                   color: "#888888",
-                  margin: "md"
-                }
-              ]
-            }
-          }
-
+                  margin: "md",
+                },
+              ],
+            },
+          },
         });
-
-
       }
     }
 
@@ -538,6 +536,7 @@ const updateDoctorProfile = async (req, res) => {
   try {
     const userId = req.doctor.id; // id จาก token = user_id
 
+    const name = req.body.name;
     const about = req.body.about || "";
     const experience = req.body.experience || 0;
 
@@ -556,6 +555,14 @@ const updateDoctorProfile = async (req, res) => {
       "UPDATE Doctor SET about = ?, available = ?, experience = ? WHERE user_id = ?",
       [about, available, experience, userId],
     );
+
+    // อัปเดตชื่อลงในตาราง Users
+    if (name) {
+      await db.query("UPDATE Users SET name = ? WHERE user_id = ?", [
+        name,
+        userId,
+      ]);
+    }
 
     // ถ้ามีการอัปโหลดรูปภาพ ให้บันทึกลงตาราง Users
     if (req.file) {
@@ -698,28 +705,30 @@ const appointmentCancel = async (req, res) => {
       JOIN Doctor d ON a.doctor_id = d.doctor_id
       JOIN Users u ON d.user_id = u.user_id
       WHERE a.appointment_id = ?
-    `,[appointment_id])
+    `,
+      [appointment_id],
+    );
 
     if (!rows.length) {
       return res.json({
-        success:false,
-        message:"Appointment not found"
-      })
+        success: false,
+        message: "Appointment not found",
+      });
     }
 
     const data = rows[0];
 
     // format วันที่
-    const date = new Date(data.appointment_date)
+    const date = new Date(data.appointment_date);
 
     const formattedDate = date.toLocaleDateString("th-TH", {
       year: "numeric",
       month: "long",
-      day: "numeric"
-    })
+      day: "numeric",
+    });
 
     // format เวลา
-    const formattedTime = data.appointment_time.slice(0,5)
+    const formattedTime = data.appointment_time.slice(0, 5);
 
     // update status
     await db.query(
@@ -804,7 +813,6 @@ const appointmentCancel = async (req, res) => {
 
 const getBookedTimes = async (req, res) => {
   try {
-
     const { date, doctorId, patientId } = req.query;
 
     const [appointments] = await db.query(
@@ -813,23 +821,20 @@ const getBookedTimes = async (req, res) => {
        WHERE appointment_date = ?
        AND (doctor_id = ? OR patient_id = ?)
        AND status != 'cancelled'`,
-      [date, doctorId, patientId]
+      [date, doctorId, patientId],
     );
 
-    const times = appointments.map(a => a.time);
+    const times = appointments.map((a) => a.time);
 
     res.json({
       success: true,
-      times
+      times,
     });
-
   } catch (error) {
-
     res.json({
-      success:false,
-      message:error.message
+      success: false,
+      message: error.message,
     });
-
   }
 };
 
@@ -842,5 +847,5 @@ export {
   doctorProfile,
   updateDoctorProfile,
   doctorList,
-  getBookedTimes
+  getBookedTimes,
 };
