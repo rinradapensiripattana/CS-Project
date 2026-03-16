@@ -388,14 +388,18 @@ const changeAvailability = async (req, res) => {
 const getAllPatients = async (req, res) => {
   try {
     const [patients] = await db.execute(`
-            SELECT
-                p.patient_id,
-                u.name,
-                u.email
-            FROM Patient p
-            JOIN Users u ON p.user_id = u.user_id
-            ORDER BY u.name ASC
-        `);
+      SELECT
+        p.patient_id,
+        u.name,
+        u.email,
+        u.image,
+        p.phone,
+        p.gender,
+        p.date_of_birth
+      FROM Patient p
+      JOIN Users u ON p.user_id = u.user_id
+      ORDER BY u.name ASC
+    `);
     res.json({ success: true, patients });
   } catch (error) {
     res.json({ success: false, message: error.message });
@@ -639,11 +643,107 @@ const getBookedTimes = async (req, res) => {
     console.log(error);
 
     res.json({
+      success: false,
+      message: error.message
+    });
+
+  }
+};
+
+// =======================
+// Get Patient Appointment History
+// =======================
+
+const getPatientAppointments = async (req, res) => {
+
+  try {
+
+    const { patientId } = req.params;
+
+    const [appointments] = await db.execute(`
+        SELECT 
+            a.appointment_id,
+            a.appointment_date,
+            a.appointment_time,
+            a.status,
+
+            u.name AS doctor_name,
+            u.image AS doctor_image
+
+        FROM Appointment a
+
+        JOIN Doctor d ON a.doctor_id = d.doctor_id
+        JOIN Users u ON d.user_id = u.user_id
+
+        WHERE a.patient_id = ?
+
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC
+    `, [patientId]);
+
+    res.json({
+      success: true,
+      appointments
+    });
+
+  } catch (error) {
+
+    res.json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};
+
+const getPatientMedicalRecords = async (req, res) => {
+
+  try {
+
+    const { patientId } = req.params;
+
+    const [records] = await db.execute(`
+        SELECT
+            m.record_id,
+            m.symptom,
+            m.treatment,
+            m.record_date,
+
+            a.appointment_date,
+            a.appointment_time,
+
+            u.name AS doctor_name
+
+        FROM Medical_Record m
+
+        JOIN Appointment a
+        ON m.appointment_id = a.appointment_id
+
+        JOIN Doctor d
+        ON a.doctor_id = d.doctor_id
+
+        JOIN Users u
+        ON d.user_id = u.user_id
+
+        WHERE a.patient_id = ?
+
+        ORDER BY m.record_date DESC
+    `,[patientId]);
+
+    res.json({
+      success:true,
+      records
+    });
+
+  } catch (error) {
+
+    res.json({
       success:false,
       message:error.message
     });
 
   }
+
 };
 
 export {
@@ -656,5 +756,7 @@ export {
   changeAvailability,
   getAllPatients,
   createAppointment,
-  getBookedTimes
+  getBookedTimes,
+  getPatientAppointments,
+  getPatientMedicalRecords
 };
