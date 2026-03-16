@@ -670,7 +670,7 @@ const DoctorDashboard = () => {
       </div>
 
       {/* Latest Bookings */}
-      <div className="bg-white mt-10 rounded border shadow-md">
+      <div className="bg-white mt-10 rounded border shadow-md print:break-inside-avoid">
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-4 border-b">
           <img src={assets.list_icon} alt="" />
@@ -702,7 +702,7 @@ const DoctorDashboard = () => {
             .map((item) => (
               <div
                 key={item.appointment_id}
-                className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100"
+                className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100 print:break-inside-avoid"
               >
                 {/* Patient Image */}
                 <img

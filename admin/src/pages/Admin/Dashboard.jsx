@@ -775,7 +775,7 @@ const Dashboard = () => {
       </div>
 
       {/* ===== Latest Bookings ===== */}
-      <div className="bg-white mt-10 rounded border shadow-md">
+      <div className="bg-white mt-10 rounded border shadow-md print:break-inside-avoid">
         <div className="flex items-center gap-2 px-4 py-4 border-b">
           <img src={assets.list_icon} alt="" className="w-6 h-6" />
           <p className="font-semibold">Latest Bookings (Today)</p>
@@ -804,7 +804,7 @@ const Dashboard = () => {
             })
             .map((item, index) => (
               <div
-                className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100"
+                className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100 print:break-inside-avoid"
                 key={index}
               >
                 {/* ✅ Default Image */}
