@@ -654,6 +654,72 @@ const getMedicalHistory = async (req, res) => {
   }
 };
 
+// =====================================================
+// 🔹 CHANGE PASSWORD
+// =====================================================
+
+const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    // 🔸 เช็คว่ากรอกครบไหม
+    if (!currentPassword || !newPassword) {
+      return res.json({
+        success: false,
+        message: "Please fill all fields",
+      });
+    }
+
+    // 🔸 ดึง user
+    const [rows] = await db.query(
+      "SELECT password FROM Users WHERE user_id = ?",
+      [userId]
+    );
+
+    if (!rows.length) {
+      return res.json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = rows[0];
+
+    // 🔸 เช็ค password เดิม
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isMatch) {
+      return res.json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // 🔸 hash password ใหม่
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 🔸 update
+    await db.query(
+      "UPDATE Users SET password = ? WHERE user_id = ?",
+      [hashedPassword, userId]
+    );
+
+    res.json({
+      success: true,
+      message: "Password updated successfully",
+    });
+
+  } catch (error) {
+    console.log("Change Password Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export {
   registerUser,
   loginUser,
@@ -664,4 +730,5 @@ export {
   bookAppointment,
   getDoctorAppointments,
   getMedicalHistory,
+  changePassword
 };

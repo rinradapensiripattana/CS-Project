@@ -8,7 +8,8 @@ import {
   cancelAppointment,
   bookAppointment,
   getDoctorAppointments,
-  getMedicalHistory
+  getMedicalHistory,
+  changePassword
 } from "../controllers/userController.js";
 
 import upload from "../middleware/multer.js";
@@ -36,5 +37,7 @@ userRouter.get("/appointments", authUser, listAppointment);
 userRouter.post("/cancel-appointment", authUser, cancelAppointment);
 userRouter.get("/doctor-appointments/:docId", getDoctorAppointments);
 userRouter.get("/history", authUser, getMedicalHistory);
+
+userRouter.put("/change-password", authUser, changePassword);
 
 export default userRouter;

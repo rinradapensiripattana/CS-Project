@@ -13,6 +13,7 @@ import History from './pages/History'
 import Footer from './components/Footer'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ChangePassword from './pages/ChangePassword'
 
 const App = () => {
   return (
@@ -30,6 +31,7 @@ const App = () => {
         <Route path="/my-appointments" element={<MyAppointment />} />
         <Route path="/appointment/:docId" element={<Appointment />} />
         <Route path="/history" element={<History />} />
+        <Route path="/change-password" element={<ChangePassword />} />
       </Routes>
       <Footer />
     </div>

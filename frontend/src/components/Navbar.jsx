@@ -103,6 +103,12 @@ const Navbar = () => {
                 >
                   History
                 </p>
+                <p
+                  onClick={() => navigate("/change-password")}
+                  className="hover:text-black cursor-pointer"
+                >
+                  Change Password
+                </p>
                 <p onClick={logout} className="hover:text-black cursor-pointer">
                   Logout
                 </p>
