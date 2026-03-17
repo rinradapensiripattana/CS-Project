@@ -485,11 +485,17 @@ const DoctorAppointments = () => {
               const isToday = cellDate.getTime() === today.getTime();
               const currentDateStr = cellDate.toDateString();
 
-              const dayAppointments = calendarAppointments.filter(
-                (app) =>
-                  new Date(app.appointment_date).toDateString() ===
-                  currentDateStr,
-              );
+              const dayAppointments = calendarAppointments
+                .filter(
+                  (app) =>
+                    new Date(app.appointment_date).toDateString() ===
+                    currentDateStr,
+                )
+                .sort((a, b) => {
+                  const timeA = a.appointment_time || "00:00";
+                  const timeB = b.appointment_time || "00:00";
+                  return timeA.localeCompare(timeB);
+                });
 
               return (
                 <div

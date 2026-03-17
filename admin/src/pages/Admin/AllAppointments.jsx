@@ -147,7 +147,10 @@ const AllAppointments = () => {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentAppointments = filteredAppointments.slice(indexOfFirstItem, indexOfLastItem);
+  const currentAppointments = filteredAppointments.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
 
   // Data for Calendar View (All statuses, but still applies search and date filters)
@@ -353,7 +356,9 @@ const AllAppointments = () => {
                 Page {currentPage} of {totalPages}
               </span>
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="px-4 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
@@ -423,11 +428,17 @@ const AllAppointments = () => {
               const isToday = cellDate.getTime() === today.getTime();
               const currentDateStr = cellDate.toDateString();
 
-              const dayAppointments = calendarAppointments.filter(
-                (app) =>
-                  new Date(app.appointment_date).toDateString() ===
-                  currentDateStr,
-              );
+              const dayAppointments = calendarAppointments
+                .filter(
+                  (app) =>
+                    new Date(app.appointment_date).toDateString() ===
+                    currentDateStr,
+                )
+                .sort((a, b) => {
+                  const timeA = a.appointment_time || "00:00";
+                  const timeB = b.appointment_time || "00:00";
+                  return timeA.localeCompare(timeB);
+                });
 
               return (
                 <div
