@@ -64,8 +64,92 @@ app.post("/webhook", line.middleware(lineConfig), async (req, res) => {
 
         await client.replyMessage(event.replyToken, {
           type: "text",
-          text: "กรุณากรอกเลขบัตรประชาชน 13 หลัก",
+          text: "กรุณากรอกเลขบัตรประชาชน 13 หลัก ที่ใช้ลงทะเบียนในเว็บไซต์",
         });
+      }
+
+      // นัดของฉัน
+      else if (text === "รายการนัดหมายของฉัน") {
+        try {
+          // 1. หา patient จาก LINE
+          const [patient] = await db.query(
+            "SELECT patient_id FROM Patient WHERE line_user_id = ?",
+            [userId]
+          );
+
+          if (patient.length === 0) {
+            await client.replyMessage(event.replyToken, {
+              type: "text",
+              text: "กรุณาเชื่อมบัญชีก่อนใช้งาน",
+            });
+            return;
+          }
+
+          const patientId = patient[0].patient_id;
+
+          // 2. ดึงนัด
+          const [appointments] = await db.query(
+            `SELECT 
+                a.appointment_date, 
+                a.appointment_time, 
+                u.name AS doctor_name
+             FROM Appointment a
+             JOIN Doctor d ON a.doctor_id = d.doctor_id
+             JOIN Users u ON d.user_id = u.user_id
+             WHERE a.patient_id = ?
+             AND a.status = 'confirmed'
+             AND (
+                  a.appointment_date > CURDATE()
+                  OR (a.appointment_date = CURDATE() AND a.appointment_time >= CURTIME())
+                 )
+             ORDER BY a.appointment_date ASC, a.appointment_time ASC`,
+            [patientId]
+          );
+
+          // ไม่มีรายการนัดหมาย
+          if (appointments.length === 0) {
+            await client.replyMessage(event.replyToken, {
+              type: "text",
+              text: `📋 รายการนัดหมายของคุณ
+
+คุณยังไม่มีนัดหมายในขณะนี้`,
+            });
+            return;
+          }
+
+          // 3. format ข้อความ
+          const list = appointments
+          .slice(0, 10)
+          .map((a) => {
+            const date = new Date(a.appointment_date);
+        
+            const formattedDate = date.toLocaleDateString("th-TH", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            });
+        
+            const formattedTime = a.appointment_time.slice(0, 5);
+        
+            return `📆 วันที่: ${formattedDate}\n⏰ เวลา: ${formattedTime}\n👨‍⚕️ แพทย์: ${a.doctor_name}`;
+          })
+          .join(appointments.length > 1 ? "\n────────────\n" : "")
+        
+        const message = `📋 รายการนัดหมายของคุณ\n\n${list}`;
+        
+        await client.replyMessage(event.replyToken, {
+          type: "text",
+          text: message,
+        });
+
+        } catch (err) {
+          console.error(err);
+
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "เกิดข้อผิดพลาดในการดึงข้อมูล",
+          });
+        }
       }
 
       // กำลังสมัคร
@@ -75,9 +159,9 @@ app.post("/webhook", line.middleware(lineConfig), async (req, res) => {
         if (!/^\d{13}$/.test(idNumber)) {
           await client.replyMessage(event.replyToken, {
             type: "text",
-            text: "กรุณากรอกเลขบัตรประชาชน 13 หลัก",
+            text: "กรุณากรอกเลขบัตรประชาชน 13 หลัก ที่ใช้ลงทะเบียนในเว็บไซต์",
           });
-          continue;
+          return;
         }
 
         try {
@@ -89,21 +173,26 @@ app.post("/webhook", line.middleware(lineConfig), async (req, res) => {
           if (rows.length === 0) {
             await client.replyMessage(event.replyToken, {
               type: "text",
-              text: "ไม่พบข้อมูลผู้ป่วยในระบบ",
+              text: "ไม่พบข้อมูลผู้ป่วยในระบบ กรุณาลองใหม่อีกครั้ง",
             });
-          } else {
-            await db.query(
-              "UPDATE Patient SET line_user_id = ? WHERE id_number = ?",
-              [userId, idNumber]
-            );
 
-            await client.replyMessage(event.replyToken, {
-              type: "text",
-              text: "เชื่อม LINE สำเร็จ",
-            });
+            return;
           }
 
+          // เจอข้อมูล
+          await db.query(
+            "UPDATE Patient SET line_user_id = ? WHERE id_number = ?",
+            [userId, idNumber]
+          );
+
+          await client.replyMessage(event.replyToken, {
+            type: "text",
+            text: "เชื่อม LINE สำเร็จ",
+          });
+
+          // ลบเฉพาะตอนสำเร็จ
           delete registerUsers[userId];
+
         } catch (error) {
           console.error(error);
 
