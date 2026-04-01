@@ -78,9 +78,13 @@ app.post("/webhook", line.middleware(lineConfig), async (req, res) => {
           );
 
           if (patient.length === 0) {
+            // เข้า flow
+            registerUsers[userId] = true;
+          
             await client.replyMessage(event.replyToken, {
               type: "text",
-              text: "กรุณาเชื่อมบัญชีก่อนใช้งาน",
+              text: `❗ คุณยังไม่ได้เชื่อมบัญชี
+กรุณากรอกเลขบัตรประชาชน 13 หลัก ที่ใช้ลงทะเบียนในเว็บไซต์`,
             });
             return;
           }
