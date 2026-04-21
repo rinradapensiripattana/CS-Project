@@ -62,7 +62,7 @@ const DoctorDashboard = () => {
     }
   };
 
-  // สร้างฟังก์ชัน Cancel แยกมาไว้ในนี้เพื่อให้สามารถเรียก getDashData() รีเฟรชหน้าจอได้ทันที
+  // สร้างฟังก์ชัน Cancel แยกมาไว้ในนี้เพื่อให้สามารถเรียก getDashData() ตอนรีเฟรชหน้าจอได้ทันที
   const cancelAppointment = async (appointment_id) => {
     try {
       const { data } = await axios.post(
@@ -81,7 +81,7 @@ const DoctorDashboard = () => {
     }
   };
 
-  // สร้างฟังก์ชัน Complete แบบทันที (ข้ามการกรอกประวัติ) พร้อมรีเฟรชหน้าจอ
+  // สร้างฟังก์ชัน Complete แบบทันที 
   const completeAppointment = async (appointment_id) => {
     try {
       const { data } = await axios.post(
@@ -110,7 +110,7 @@ const DoctorDashboard = () => {
     }
   }, [dToken]);
 
-  // Prepare Chart Data
+  // Chart Data
   const chartData = useMemo(() => {
     if (!dashData?.appointmentsGraph) return [];
 
@@ -133,7 +133,6 @@ const DoctorDashboard = () => {
       const today = new Date();
       const year = today.getFullYear();
       for (let i = 0; i < 12; i++) {
-        // สร้างวันที่เป็นวันแรกของแต่ละเดือน
         dateList.push(new Date(year, i, 1));
       }
     } else {
@@ -151,7 +150,7 @@ const DoctorDashboard = () => {
     }
 
     const dataMap = {};
-    // ฟังก์ชันช่วยจัดกลุ่มวันที่
+    // ฟังก์ชันจัดกลุ่มวันที่
     const getDateKey = (dateStr) => {
       if (dateFilter === "thisYear") {
         return dateStr.substring(0, 7); // YYYY-MM
@@ -226,12 +225,12 @@ const DoctorDashboard = () => {
   const maxCount = Math.max(...chartData.map((d) => d.count), 1) * 1.1;
 
   const statusColors = {
-    confirmed: "#3B82F6", // Blue
-    completed: "#22C55E", // Green
-    cancelled: "#EF4444", // Red
+    confirmed: "#3B82F6", 
+    completed: "#22C55E", 
+    cancelled: "#EF4444", 
   };
 
-  // 🎨 ฟังก์ชันสร้างกราฟวงกลมด้วย CSS
+  // ฟังก์ชันสร้างกราฟวงกลม
   const renderPieChart = (data) => {
     if (!data || data.length === 0) {
       return (
@@ -264,11 +263,11 @@ const DoctorDashboard = () => {
     const getColor = (gender) => {
       switch (gender?.toLowerCase()) {
         case "male":
-          return "#36A2EB"; // Blue
+          return "#36A2EB"; 
         case "female":
-          return "#FF6384"; // Pink
+          return "#FF6384"; 
         default:
-          return "#FFCE56"; // Yellow
+          return "#FFCE56"; 
       }
     };
 
@@ -305,7 +304,6 @@ const DoctorDashboard = () => {
               const dx = x - centerX;
               const dy = y - centerY;
 
-              // คำนวณระยะห่างจากจุดศูนย์กลาง (เพื่อไม่ให้แสดง Tooltip ตรงรูโดนัท)
               const distance = Math.sqrt(dx * dx + dy * dy);
               const radius = rect.width / 2;
               if (distance < radius * 0.6) {
@@ -313,7 +311,6 @@ const DoctorDashboard = () => {
                 return;
               }
 
-              // คำนวณองศา (0 ที่ด้านบน, หมุนตามเข็มนาฬิกา)
               let angle = Math.atan2(dy, dx) * (180 / Math.PI);
               angle += 90;
               if (angle < 0) angle += 360;
@@ -350,7 +347,6 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        {/* Tooltip */}
         {tooltip.visible && (
           <div
             className="fixed bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none z-50 shadow-lg whitespace-nowrap"
@@ -387,7 +383,6 @@ const DoctorDashboard = () => {
   };
 
   const downloadCSV = async () => {
-    // 1. Fetch fresh data from DB
     let appointmentsToExport = [];
     try {
       const { data } = await axios.get(
@@ -416,10 +411,8 @@ const DoctorDashboard = () => {
       return;
     }
 
-    // 1. BOM for UTF-8 Support
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
 
-    // 2. Report Header
     csvContent += "Doctor Dashboard Report\n";
     csvContent += "\n"; // Empty Line
 
@@ -428,7 +421,6 @@ const DoctorDashboard = () => {
     csvContent +=
       "Date,Time,Patient Name,Patient Age,Patient Phone,Status,Gender\n";
 
-    // Use fetched data
     appointmentsToExport.forEach((item) => {
       const date = `"${new Date(item.appointment_date).toLocaleDateString("en-GB")}"`;
       const time = item.appointment_time
@@ -493,7 +485,7 @@ const DoctorDashboard = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 mt-4">
-        {/* ===== Gender Chart ===== */}
+        {/* Gender Chart */}
         <div className="bg-white rounded border p-6 w-full lg:w-1/3 shadow-md min-w-0">
           <p className="font-semibold text-lg mb-4">My Patients by Gender</p>
           <div
@@ -510,7 +502,7 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        {/* ===== Appointments Bar Chart (Last 7 Days) ===== */}
+        {/* Appointments Chart */}
         <div className="bg-white rounded border p-6 w-full lg:w-2/3 flex-1 shadow-md min-w-0">
           <div className="flex flex-col mb-4 gap-3">
             <p className="font-semibold text-lg">My Appointments</p>
@@ -547,7 +539,6 @@ const DoctorDashboard = () => {
             </div>
           </div>
 
-          {/* Legend */}
           <div className="flex flex-wrap gap-3 mb-4 text-xs text-gray-600">
             <div className="flex items-center gap-1">
               <span
@@ -585,7 +576,6 @@ const DoctorDashboard = () => {
                   key={index}
                   className="flex-1 flex flex-col items-center justify-end gap-1 sm:gap-2 group h-full relative min-w-0"
                 >
-                  {/* Tooltip */}
                   <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 z-20 shadow-lg min-w-[120px]">
                     <p className="font-semibold border-b border-gray-600 pb-1 mb-1 text-center">
                       {item.label}
@@ -615,7 +605,6 @@ const DoctorDashboard = () => {
                     {item.count > 0 ? item.count : ""}
                   </p>
 
-                  {/* Stacked Bar Container */}
                   <div
                     className="w-full rounded-t overflow-hidden flex flex-col-reverse relative group-hover:brightness-105 transition-all duration-300 bg-gray-100"
                     style={{
@@ -671,7 +660,6 @@ const DoctorDashboard = () => {
 
       {/* Latest Bookings */}
       <div className="bg-white mt-10 rounded border shadow-md print:break-inside-avoid">
-        {/* Header */}
         <div className="flex items-center gap-2 px-4 py-4 border-b">
           <img src={assets.list_icon} alt="" />
           <p className="font-semibold">Latest Bookings (Today)</p>
@@ -755,7 +743,7 @@ const DoctorDashboard = () => {
                       alt=""
                     />
 
-                    {/* Go to Medical Record */}
+                    {/* Medical Record */}
                     <img
                       onClick={() => {
                         const appointmentDateTime = new Date(
@@ -779,7 +767,6 @@ const DoctorDashboard = () => {
                           return;
                         }
 
-                        // เรียกใช้ฟังก์ชันให้เปลี่ยนสถานะทันที (Quick Complete)
                         completeAppointment(item.appointment_id);
                       }}
                       className="w-8 cursor-pointer"

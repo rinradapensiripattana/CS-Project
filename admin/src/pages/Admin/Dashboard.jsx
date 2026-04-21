@@ -50,7 +50,7 @@ const Dashboard = () => {
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
 
-  // Color Palette for Doctors
+  // Color Palette for Doctor
   const doctorColors = [
     "#FF6384",
     "#36A2EB",
@@ -63,9 +63,9 @@ const Dashboard = () => {
   ];
 
   const statusColors = {
-    confirmed: "#3B82F6", // Blue
-    completed: "#22C55E", // Green
-    cancelled: "#EF4444", // Red
+    confirmed: "#3B82F6", 
+    completed: "#22C55E", 
+    cancelled: "#EF4444", 
   };
 
   useEffect(() => {
@@ -75,7 +75,7 @@ const Dashboard = () => {
     }
   }, [aToken]);
 
-  // ✅ ฟังก์ชันแปลงวันที่ให้สวย
+  // ฟังก์ชันแปลงวันที่
   const formatDate = (dateString) => {
     const date = new Date(dateString);
 
@@ -86,7 +86,7 @@ const Dashboard = () => {
     });
   };
 
-  // 🎨 ฟังก์ชันสร้างกราฟวงกลมด้วย CSS
+  // ฟังก์ชันสร้างกราฟวงกลม
   const renderPieChart = (data) => {
     if (!data || data.length === 0) {
       return (
@@ -119,11 +119,11 @@ const Dashboard = () => {
     const getColor = (gender) => {
       switch (gender?.toLowerCase()) {
         case "male":
-          return "#36A2EB"; // Blue (Matches doctorColors)
+          return "#36A2EB"; 
         case "female":
-          return "#FF6384"; // Pink (Matches doctorColors)
+          return "#FF6384"; 
         default:
-          return "#FFCE56"; // Yellow (Matches doctorColors)
+          return "#FFCE56"; 
       }
     };
 
@@ -160,7 +160,6 @@ const Dashboard = () => {
               const dx = x - centerX;
               const dy = y - centerY;
 
-              // คำนวณระยะห่างจากจุดศูนย์กลาง (เพื่อไม่ให้แสดง Tooltip ตรงรูโดนัท)
               const distance = Math.sqrt(dx * dx + dy * dy);
               const radius = rect.width / 2;
               if (distance < radius * 0.6) {
@@ -168,7 +167,6 @@ const Dashboard = () => {
                 return;
               }
 
-              // คำนวณองศา (0 ที่ด้านบน, หมุนตามเข็มนาฬิกา)
               let angle = Math.atan2(dy, dx) * (180 / Math.PI);
               angle += 90;
               if (angle < 0) angle += 360;
@@ -205,7 +203,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tooltip */}
+        
         {tooltip.visible && (
           <div
             className="fixed bg-gray-800 text-white text-xs rounded px-2 py-1 pointer-events-none z-50 shadow-lg whitespace-nowrap"
@@ -241,7 +239,7 @@ const Dashboard = () => {
     );
   };
 
-  // Prepare Chart Data
+  // Chart Data
   const { chartData, visibleDoctors, allDoctors } = useMemo(() => {
     if (!dashData) return { chartData: [], visibleDoctors: [], allDoctors: [] };
 
@@ -264,7 +262,6 @@ const Dashboard = () => {
       const today = new Date();
       const year = today.getFullYear();
       for (let i = 0; i < 12; i++) {
-        // สร้างวันที่เป็นวันแรกของแต่ละเดือน
         dateList.push(new Date(year, i, 1));
       }
     } else {
@@ -284,10 +281,9 @@ const Dashboard = () => {
     const dataMap = {};
     const doctorsSet = new Set();
 
-    // เพิ่มรายชื่อหมอทุกคนเข้าไปใน Set ก่อน เพื่อให้แสดงในตัวกรอง/Legend เสมอ
     doctors?.forEach((doc) => doctorsSet.add(doc.name));
 
-    // ฟังก์ชันช่วยจัดกลุ่มวันที่
+    // ฟังก์ชันจัดกลุ่มวันที่
     const getDateKey = (dateStr) => {
       if (dateFilter === "thisYear") {
         return dateStr.substring(0, 7); // YYYY-MM
@@ -413,7 +409,7 @@ const Dashboard = () => {
     Math.max(...(chartData?.map((d) => d.count) || [0]), 1) * 1.1;
 
   const downloadCSV = async () => {
-    // 1. Fetch fresh data from DB
+    
     let appointmentsToExport = [];
     try {
       const { data } = await axios.get(backendUrl + "/api/admin/appointments", {
@@ -421,7 +417,7 @@ const Dashboard = () => {
       });
       if (data.success) {
         appointmentsToExport = data.appointments;
-        // เรียงวันที่จากน้อยไปมาก
+        
         appointmentsToExport.sort((a, b) => {
           const dateA = new Date(a.appointment_date);
           const dateB = new Date(b.appointment_date);
@@ -439,21 +435,16 @@ const Dashboard = () => {
       return;
     }
 
-    // 1. BOM for UTF-8 Support
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
 
-    // 2. Report Header
     csvContent += "Admin Dashboard Report\n";
     csvContent += "\n"; // Empty Line
 
-    // Detailed Appointments List
     csvContent += "Detailed Appointments List\n";
     csvContent +=
       "Date,Time,Doctor,Patient Name,Patient Age,Patient Phone,Status,Gender\n";
 
-    // Use fetched data
     appointmentsToExport.forEach((item) => {
-      // Wrap text in quotes
       const date = `"${new Date(item.appointment_date).toLocaleDateString("en-GB")}"`;
       const time = item.appointment_time
         ? `"${item.appointment_time.slice(0, 5)}"`
@@ -481,7 +472,6 @@ const Dashboard = () => {
 
   return (
     <div className="w-full p-5">
-      {/* ===== Cards ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <div className="flex items-center gap-3 bg-white p-6 rounded-xl border border-gray-100 shadow-md hover:shadow-lg hover:-translate-y-2 transition-all duration-300">
           <img className="w-14" src={assets.doctor_icon} alt="" />
@@ -524,7 +514,7 @@ const Dashboard = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 mt-4">
-        {/* ===== Gender Chart ===== */}
+        {/* Gender Chart */}
         <div className="bg-white rounded border p-6 w-full lg:w-1/3 shadow-md min-w-0">
           <p className="font-semibold text-lg mb-4">Patients by Gender</p>
           <div
@@ -541,7 +531,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* ===== Appointments Bar Chart (Last 7 Days) ===== */}
+        {/* Appointments Chart */}
         <div className="bg-white rounded border p-6 w-full lg:w-2/3 flex-1 shadow-md min-w-0">
           <div className="flex flex-col mb-4 gap-3">
             <p className="font-semibold text-lg">Appointments by Doctor</p>
@@ -591,7 +581,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Legend */}
+          
           <div className="flex flex-wrap gap-3 mb-4 text-xs text-gray-600">
             {selectedDoctor === "all" ? (
               allDoctors.map((doc) => (
@@ -648,7 +638,6 @@ const Dashboard = () => {
                   key={index}
                   className="flex-1 flex flex-col items-center justify-end gap-1 sm:gap-2 group h-full relative min-w-0"
                 >
-                  {/* Tooltip */}
                   <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 z-20 shadow-lg min-w-[120px]">
                     <p className="font-semibold border-b border-gray-600 pb-1 mb-1 text-center">
                       {item.label}
@@ -706,7 +695,7 @@ const Dashboard = () => {
                     {item.count > 0 ? item.count : ""}
                   </p>
 
-                  {/* Stacked Bar Container */}
+                  
                   <div
                     className="w-full rounded-t overflow-hidden flex flex-col-reverse relative group-hover:brightness-105 transition-all duration-300 bg-gray-100"
                     style={{
@@ -774,7 +763,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ===== Latest Bookings ===== */}
+      {/* Latest Bookings */}
       <div className="bg-white mt-10 rounded border shadow-md print:break-inside-avoid">
         <div className="flex items-center gap-2 px-4 py-4 border-b">
           <img src={assets.list_icon} alt="" className="w-6 h-6" />
@@ -800,14 +789,14 @@ const Dashboard = () => {
             .sort((a, b) => {
               const timeA = a.appointment_time || "00:00";
               const timeB = b.appointment_time || "00:00";
-              return timeB.localeCompare(timeA); // เรียงจากเวลามากไปน้อย (ใหม่ไปเก่า)
+              return timeB.localeCompare(timeA); // เรียงจากใหม่ไปเก่า
             })
             .map((item, index) => (
               <div
                 className="flex items-center px-6 py-3 gap-3 hover:bg-gray-100 print:break-inside-avoid"
                 key={index}
               >
-                {/* ✅ Default Image */}
+                {/* Image */}
                 <img
                   className="rounded-full w-10 h-10 object-cover"
                   src={

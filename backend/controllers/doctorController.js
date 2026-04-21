@@ -8,9 +8,7 @@ const lineClient = new line.Client({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
 });
 
-// ==========================
-// FORMAT DATE + TIME (THAI)
-// ==========================
+// Format Date + Time
 const formatDateTime = (date, time) => {
   const formattedDate = new Date(date).toLocaleDateString("th-TH", {
     year: "numeric",
@@ -78,7 +76,6 @@ const appointmentsDoctor = async (req, res) => {
     }
 
     const doctorId = doctor[0].doctor_id;
-    //console.log("Doctor ID from token:", doctorId)
 
     const [rows] = await db.query(
       `
@@ -133,10 +130,7 @@ const appointmentComplete = async (req, res) => {
       followup_time,
     } = req.body;
 
-    // =========================
-    // 1️⃣ หา doctor_id
-    // =========================
-
+    // หา doctor_id
     const [doctor] = await db.query(
       "SELECT doctor_id FROM Doctor WHERE user_id = ?",
       [userId],
@@ -151,10 +145,7 @@ const appointmentComplete = async (req, res) => {
 
     const doctorId = doctor[0].doctor_id;
 
-    // =========================
-    // 2️⃣ เช็ค appointment
-    // =========================
-
+    // เช็ค appointment
     const [check] = await db.query(
       "SELECT * FROM Appointment WHERE appointment_id = ? AND doctor_id = ?",
       [appointment_id, doctorId],
@@ -169,10 +160,7 @@ const appointmentComplete = async (req, res) => {
 
     const appointment = check[0];
 
-    // =========================
-    // 3️⃣ save medical record
-    // =========================
-
+    // Save medical record
     const [record] = await db.query(
       "SELECT * FROM Medical_Record WHERE appointment_id = ?",
       [appointment_id],
@@ -194,19 +182,13 @@ const appointmentComplete = async (req, res) => {
       );
     }
 
-    // =========================
-    // 4️⃣ update status completed
-    // =========================
-
+    // Update status completed
     await db.query(
       "UPDATE Appointment SET status = 'completed' WHERE appointment_id = ?",
       [appointment_id],
     );
 
-    // =========================
-    // 🔔 LINE RESULT NOTIFICATION
-    // =========================
-
+    // Line Notification
     // ดึง line user
     const [patient] = await db.query(
       "SELECT line_user_id FROM Patient WHERE patient_id = ?",
@@ -299,10 +281,7 @@ const appointmentComplete = async (req, res) => {
       });
     }
 
-    // =========================
-    // 5️⃣ follow-up appointment
-    // =========================
-
+    // Follow-up appointment
     if (followup_date && followup_time) {
       const [doctorStatus] = await db.query(
         "SELECT available FROM Doctor WHERE doctor_id = ?",
@@ -369,10 +348,7 @@ const appointmentComplete = async (req, res) => {
         );
       }
 
-      // =========================
-      // 🔔 LINE FOLLOW-UP NOTIFICATION
-      // =========================
-
+      // Line Notification for Follow-up
       const [patient] = await db.query(
         "SELECT line_user_id FROM Patient WHERE patient_id = ?",
         [appointment.patient_id],
@@ -483,23 +459,6 @@ const doctorList = async (req, res) => {
   }
 };
 
-// API to change doctor availablity for Admin and Doctor Panel
-// const changeAvailablity = async (req, res) => {
-//     try {
-
-//         const { docId } = req.body
-
-//         const docData = await doctorModel.findById(docId)
-//         await doctorModel.findByIdAndUpdate(docId, { available: !docData.available })
-//         res.json({ success: true, message: 'Availablity Changed' })
-
-//     } catch (error) {
-//         console.log(error)
-//         res.json({ success: false, message: error.message })
-//     }
-// }
-
-// API to get doctor profile for  Doctor Panel
 const doctorProfile = async (req, res) => {
   try {
     const userId = req.doctor.id;
@@ -586,10 +545,10 @@ const updateDoctorProfile = async (req, res) => {
 // API to get dashboard data for doctor panel
 const doctorDashboard = async (req, res) => {
   try {
-    // 1️⃣ ดึง user_id จาก token
+    // ดึง user_id จาก token
     const userId = req.doctor.id;
 
-    // 2️⃣ หา doctor_id จากตาราง Doctor
+    // หา doctor_id จากตาราง Doctor
     const [doctor] = await db.query(
       "SELECT doctor_id FROM Doctor WHERE user_id = ?",
       [userId],
@@ -601,7 +560,7 @@ const doctorDashboard = async (req, res) => {
 
     const doctorId = doctor[0].doctor_id;
 
-    // 3️⃣ ดึง appointment ทั้งหมดของหมอ
+    // ดึง appointment ทั้งหมดของ Doctor
     const [appointments] = await db.query(
       `
       SELECT 
@@ -622,7 +581,7 @@ const doctorDashboard = async (req, res) => {
       [doctorId],
     );
 
-    // 4️⃣ นับจำนวนคนไข้ไม่ซ้ำ
+    // นับจำนวนคนไข้ไม่ซ้ำ
     const [patientsCount] = await db.query(
       `
         SELECT COUNT(DISTINCT patient_id) as totalPatients, 0 as fallback
@@ -632,7 +591,7 @@ const doctorDashboard = async (req, res) => {
       [doctorId],
     );
 
-    // 5️⃣ ข้อมูลเพศคนไข้ของหมอคนนี้
+    // ข้อมูลเพศคนไข้ของหมอคนนี้
     const [genderData] = await db.query(
       `
       SELECT p.gender, COUNT(DISTINCT p.patient_id) as count
@@ -644,7 +603,7 @@ const doctorDashboard = async (req, res) => {
       [doctorId],
     );
 
-    // 6️⃣ ข้อมูลสำหรับกราฟแท่ง (Last 7 Days) เฉพาะของหมอคนนั้น
+    // ข้อมูลสำหรับกราฟแท่งเฉพาะของหมอคนนี้
     const [appointmentsGraph] = await db.query(
       `
       SELECT DATE_FORMAT(appointment_date, '%Y-%m-%d') as date, status, COUNT(*) as count 
@@ -736,10 +695,7 @@ const appointmentCancel = async (req, res) => {
       [appointment_id, doctorId],
     );
 
-    // =====================
-    // 🔔 LINE NOTIFICATION
-    // =====================
-
+    // Line Notification
     if (data.line_user_id) {
       await lineClient.pushMessage(data.line_user_id, {
         type: "flex",

@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react' // เพิ่ม useState, useEffect เพื่อแก้ error
+import React, { useContext, useState, useEffect } from 'react' 
 import { assets } from '../assets/assets'
 import { AdminContext } from '../context/AdminContext'
 import { useNavigate } from 'react-router-dom'
@@ -13,7 +13,6 @@ const Navbar = () => {
 
     const [currentTime, setCurrentTime] = useState(new Date())
     
-    // อัปเดตเวลาทุกวินาที
     useEffect(() => {
         const timer = setInterval(() => {
           setCurrentTime(new Date())
@@ -22,7 +21,6 @@ const Navbar = () => {
         return () => clearInterval(timer)
     }, [])
 
-    // เปลี่ยนเป็น 'en-GB' เพื่อให้เป็นภาษาอังกฤษ
     const formatDateTime = (date) => {
         return date.toLocaleString('en-GB', {
           year: 'numeric',
@@ -50,7 +48,6 @@ const Navbar = () => {
             <p className='border px-2.5 py-0.5 rounded-full border-gray-500 text-grey-600'>{aToken ? 'Admin' : 'Doctor'}</p>
         </div>
 
-        {/* ส่วนที่แก้ไข: จัดกลุ่มเวลาให้อยู่หน้าปุ่ม Logout */}
         <div className='flex items-center gap-4'>
             <p className='text-[12px] text-gray-500 hidden sm:block'>
                 {formatDateTime(currentTime)}

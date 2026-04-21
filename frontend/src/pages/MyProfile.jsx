@@ -11,7 +11,6 @@ const MyProfile = () => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // ================= UPDATE =================
   const updateUserProfileData = async () => {
     try {
       const formData = new FormData();
@@ -58,7 +57,7 @@ const MyProfile = () => {
 
   return (
     <div className="max-w-lg flex flex-col gap-4 text-sm pt-5">
-      {/* ================= IMAGE ================= */}
+      {/* Image*/}
       {isEdit ? (
         <label htmlFor="image">
           <div className="cursor-pointer">
@@ -83,7 +82,7 @@ const MyProfile = () => {
         />
       )}
 
-      {/* ================= NAME ================= */}
+      {/* Name*/}
       {isEdit ? (
         <input
           className="bg-gray-50 text-2xl font-medium p-1"
@@ -99,7 +98,7 @@ const MyProfile = () => {
 
       <hr />
 
-      {/* ================= CONTACT ================= */}
+      {/* Contact */}
       <div>
         <p className="underline font-medium mb-2">CONTACT INFORMATION</p>
 
@@ -136,7 +135,7 @@ const MyProfile = () => {
         )}
       </div>
 
-      {/* ================= BASIC INFO ================= */}
+      {/* Info */}
       <div>
         <p className="underline font-medium mt-4 mb-2">BASIC INFORMATION</p>
 
@@ -173,8 +172,7 @@ const MyProfile = () => {
             : "Not Selected"}
         </p>
       </div>
-
-      {/* ================= BUTTON ================= */}
+      
       <div className="mt-6">
         {isEdit ? (
           <button

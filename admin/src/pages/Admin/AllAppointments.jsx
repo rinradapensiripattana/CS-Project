@@ -14,7 +14,7 @@ const AllAppointments = () => {
   const [sortOrder, setSortOrder] = useState("asc");
   const [viewMode, setViewMode] = useState(
     location.state?.initialViewMode || "list",
-  ); // "list" | "calendar"
+  ); 
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -52,9 +52,7 @@ const AllAppointments = () => {
     return `${formattedDate} , ${timeString.slice(0, 5)}`;
   };
 
-  // ========================
-  // CALENDAR LOGIC
-  // ========================
+  // Calendar 
   const daysInMonth = new Date(
     calendarDate.getFullYear(),
     calendarDate.getMonth() + 1,
@@ -153,7 +151,7 @@ const AllAppointments = () => {
   );
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
 
-  // Data for Calendar View (All statuses, but still applies search and date filters)
+  // Data for Calendar View 
   const calendarAppointments = useMemo(() => {
     return appointments
       .filter((item) => {
@@ -173,7 +171,6 @@ const AllAppointments = () => {
 
   return (
     <div className="w-full max-w-6xl m-5">
-      {/* Header + Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
         <p className="text-lg font-medium">All Appointments</p>
 
@@ -186,7 +183,6 @@ const AllAppointments = () => {
             className="border px-3 py-1 rounded text-sm w-48"
           />
 
-          {/* From */}
           <div className="flex items-center gap-1">
             <label className="text-sm text-gray-600">From</label>
             <input
@@ -197,7 +193,6 @@ const AllAppointments = () => {
             />
           </div>
 
-          {/* To */}
           <div className="flex items-center gap-1">
             <label className="text-sm text-gray-600">To</label>
             <input
@@ -219,7 +214,7 @@ const AllAppointments = () => {
         </div>
       </div>
 
-      {/* Tabs & View Mode Toggle */}
+      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b mb-5">
         <div className="flex gap-6">
           {["upcoming", "completed", "cancelled"].map((tab) => (
@@ -342,7 +337,7 @@ const AllAppointments = () => {
             </p>
           )}
 
-          {/* Pagination */}
+          
           {totalPages > 1 && (
             <div className="flex justify-end items-center gap-4 p-4">
               <button
@@ -372,7 +367,7 @@ const AllAppointments = () => {
       {/* Calendar View */}
       {viewMode === "calendar" && (
         <div className="bg-white border rounded-xl p-5 shadow-sm">
-          {/* Calendar Header */}
+          
           <div className="flex justify-between items-center mb-6">
             <button
               onClick={prevMonth}
@@ -501,9 +496,7 @@ const AllAppointments = () => {
         </div>
       )}
 
-      {/* ======================== */}
-      {/* APPOINTMENT MODAL */}
-      {/* ======================== */}
+      {/* Appointment */}
       {showModal && selectedAppointment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div
@@ -517,7 +510,6 @@ const AllAppointments = () => {
               }
             `}</style>
 
-            {/* Header */}
             <div className="flex justify-between items-center p-5 border-b bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-800">
                 Appointment Details
@@ -530,7 +522,6 @@ const AllAppointments = () => {
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
                 <img
@@ -583,7 +574,6 @@ const AllAppointments = () => {
               </div>
             </div>
 
-            {/* Footer Actions */}
             {selectedAppointment.status !== "completed" &&
               selectedAppointment.status !== "cancelled" && (
                 <div className="p-5 border-t bg-gray-50 flex justify-end gap-3">

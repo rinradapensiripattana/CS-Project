@@ -98,7 +98,7 @@ const DoctorMedicalRecord = () => {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
   
-    // ✅ ตรวจสอบ follow-up
+    // ตรวจสอบ follow-up
     if (followupDate && !followupTime) {
       toast.error("Please select follow-up time");
       return;
@@ -148,9 +148,7 @@ const DoctorMedicalRecord = () => {
 
   return appointmentData ? (
     <>
-      {/* ===================== */}
-      {/* SCREEN UI (ซ่อนตอนปริ้นท์) */}
-      {/* ===================== */}
+
       <div className="m-5 w-full max-w-5xl print:hidden">
         <button
           type="button"
@@ -202,9 +200,9 @@ const DoctorMedicalRecord = () => {
               </p>
             </div>
           </div>
-
-          {/* FORM */}
+          
           <form onSubmit={onSubmitHandler} className="flex flex-col gap-6">
+
             {/* Symptoms */}
             <div>
               <label className="font-medium text-gray-700">Symptoms</label>
@@ -249,7 +247,6 @@ const DoctorMedicalRecord = () => {
                 <select
                   value={followupTime}
                   onChange={(e) => setFollowupTime(e.target.value)}
-                  /* แก้ไข className และเพิ่ม inline style ตามด้านล่างนี้ */
                   className="border rounded pl-4 pr-10 py-2 outline-primary appearance-none bg-white"
                   style={{
                     backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
@@ -304,9 +301,8 @@ const DoctorMedicalRecord = () => {
         </div>
       </div>
 
-      {/* ===================== */}
-      {/* PRINT UI (แสดงเฉพาะตอนปริ้นท์) */}
-      {/* ===================== */}
+
+      {/* PRINT */}
       <div
         className="hidden print:flex flex-col w-[210mm] h-[296mm] overflow-hidden mx-auto text-black bg-white relative box-border"
         style={{ fontFamily: "'Sarabun', sans-serif" }}
@@ -321,10 +317,8 @@ const DoctorMedicalRecord = () => {
           }
         `}</style>
 
-        {/* กรอบสไตล์ใบรับรอง (Ornamental Border) */}
         <div className="absolute inset-4 border-[6px] border-double border-gray-300 pointer-events-none z-0"></div>
 
-        {/* Main Content Wrapper */}
         <div className="flex flex-col h-full pt-12 pb-10 px-14 relative z-10">
           {/* Header */}
           <div className="text-center border-b-[3px] border-gray-800 pb-5 mb-6 mt-2">
@@ -363,7 +357,7 @@ const DoctorMedicalRecord = () => {
             </p>
           </div>
 
-          {/* Patient Info Box */}
+          {/* Patient Info */}
           <div className="mb-6 text-base bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
             <h4 className="font-bold text-gray-800 mb-3 border-b border-gray-300 pb-2">
               ข้อมูลผู้รับการตรวจ (Patient Information)
@@ -432,7 +426,7 @@ const DoctorMedicalRecord = () => {
             </div>
           </div>
 
-          {/* Footer / Signature (จะถูกดันไปอยู่ล่างสุดของกระดาษเสมอด้วย mt-auto) */}
+          {/* Signature */}
           <div className="mt-auto pt-6">
             <div className="mb-6 text-sm text-gray-500 text-center">
               <p>ขอรับรองว่าข้อความข้างต้นเป็นความจริง</p>

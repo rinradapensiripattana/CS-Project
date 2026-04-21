@@ -26,7 +26,7 @@ const CreateAppointment = () => {
 
   const [bookedTimes, setBookedTimes] = useState([]);
 
-  // generate time slot 09:00 - 20:30
+  // Time slot 09:00 - 20:30
   const generateTimeSlots = () => {
     const slots = [];
     for (let hour = 9; hour <= 20; hour++) {
@@ -156,6 +156,7 @@ const CreateAppointment = () => {
       <p className="text-lg font-medium mb-4">Create New Appointment</p>
 
       <div className="bg-white px-6 py-8 border rounded space-y-4 text-sm text-gray-600">
+
         {/* PATIENT */}
         <div className="relative">
           <p className="mb-1 font-medium">Select Patient</p>
@@ -241,7 +242,7 @@ const CreateAppointment = () => {
               <button
                 type="button"
                 onMouseDown={(e) => {
-                  e.preventDefault(); // ป้องกันการเสีย focus
+                  e.preventDefault(); 
                   setSearchDoctor("");
                   setSelectedDoctor("");
                 }}

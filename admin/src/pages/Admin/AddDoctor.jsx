@@ -48,7 +48,6 @@ const AddDoctor = () => {
       if (data.success) {
         toast.success(data.message);
 
-        // reset form
         setDocImg(null);
         setName("");
         setEmail("");
@@ -69,6 +68,7 @@ const AddDoctor = () => {
       <p className="mb-3 text-lg font-medium">Add Doctor</p>
 
       <div className="bg-white px-8 py-8 border rounded w-full max-w-4xl text-gray-600">
+
         {/* Image Upload */}
         <div className="flex items-center gap-4 mb-6 text-gray-500">
           <label htmlFor="doc-img">
@@ -103,7 +103,6 @@ const AddDoctor = () => {
 
         {/* Two Columns */}
         <div className="flex flex-col lg:flex-row gap-10 text-gray-600">
-          {/* Left */}
           <div className="flex-1 flex flex-col gap-4">
             <div>
               <p>Doctor Email</p>
@@ -128,7 +127,6 @@ const AddDoctor = () => {
             </div>
           </div>
 
-          {/* Right */}
           <div className="flex-1 flex flex-col gap-4">
             <div>
               <p>Password</p>

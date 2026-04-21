@@ -11,7 +11,6 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // จุดที่แก้ 1: เพิ่ม state สำหรับการโชว์รหัสผ่านที่ค้างอยู่ในโค้ดเดิม
   const [showPassword, setShowPassword] = useState(false);
 
   const { setAToken, backendUrl } = useContext(AdminContext);
@@ -49,7 +48,6 @@ const Login = () => {
         }
       }
     } catch (error) {
-      // จุดที่แก้ 2: ใส่ toast แจ้งเตือนกรณี Server error
       toast.error(error.message);
     }
   };
@@ -71,14 +69,13 @@ const Login = () => {
           />
         </div>
 
-        {/* จุดที่แก้ 3: จัดการ div ของ Password ให้ถูกต้องและเพิ่ม relative class */}
         <div className="w-full relative">
           <p>Password</p>
           <input
             onChange={(e) => setPassword(e.target.value)}
             value={password}
             className="border border-[#dadada] rounded w-full p-2 mt-1"
-            type={showPassword ? "text" : "password"} // เปลี่ยน type ตาม state
+            type={showPassword ? "text" : "password"} 
             required
           />
           <span
@@ -115,7 +112,6 @@ const Login = () => {
           </p>
         )}
       </div>
-      {/* แก้ไขปิด div ให้ครบถ้วน */}
     </form>
   );
 };

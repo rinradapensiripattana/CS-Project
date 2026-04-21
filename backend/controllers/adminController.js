@@ -8,9 +8,7 @@ const lineClient = new line.Client({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
 });
 
-// =======================
 // Add Doctor (SQL Version)
-// =======================
 const addDoctor = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -58,10 +56,7 @@ const addDoctor = async (req, res) => {
   }
 };
 
-// =======================
 // Admin Login (SQL)
-// =======================
-
 const loginAdmin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -94,9 +89,7 @@ const loginAdmin = async (req, res) => {
   }
 };
 
-// =======================
-// Get All Doctors
-// =======================
+// All Doctors
 const allDoctors = async (req, res) => {
   try {
     const [doctors] = await db.execute(`
@@ -119,9 +112,7 @@ const allDoctors = async (req, res) => {
   }
 };
 
-// =======================
-// Get All Appointments
-// =======================
+// All Appointments
 const appointmentsAdmin = async (req, res) => {
   try {
     const [appointments] = await db.execute(`
@@ -157,10 +148,7 @@ const appointmentsAdmin = async (req, res) => {
   }
 };
 
-// =======================
 // Cancel Appointment
-// =======================
-
 const appointmentCancel = async (req, res) => {
   try {
     const { id } = req.body;
@@ -208,10 +196,7 @@ const appointmentCancel = async (req, res) => {
       [id],
     );
 
-    // =====================
-    // 🔔 LINE NOTIFICATION
-    // =====================
-
+    // Line Notification
     if (data.line_user_id) {
       await lineClient.pushMessage(data.line_user_id, {
         type: "flex",
@@ -288,9 +273,7 @@ const appointmentCancel = async (req, res) => {
   }
 };
 
-// =======================
 // Dashboard Data
-// =======================
 const adminDashboard = async (req, res) => {
   try {
     const [doctorCount] = await db.execute(
@@ -305,7 +288,7 @@ const adminDashboard = async (req, res) => {
       "SELECT COUNT(*) as total FROM Appointment",
     );
 
-    // 🔥 JOIN ถูกต้องตามโครงสร้างจริงของเธอ
+
     const [latestAppointments] = await db.execute(`
             SELECT 
                 a.appointment_id,
@@ -325,14 +308,14 @@ const adminDashboard = async (req, res) => {
             ORDER BY a.appointment_id DESC
         `);
 
-    // 🔥 ข้อมูลเพศ (Gender Distribution)
+    // ข้อมูลเพศ 
     const [genderData] = await db.execute(`
         SELECT gender, COUNT(*) as count 
         FROM Patient 
         GROUP BY gender
     `);
 
-    // 🔥 ข้อมูลสำหรับกราฟแท่ง (Last 7 Days)
+    // ข้อมูลสำหรับกราฟแท่ง 
     const [appointmentsGraph] = await db.execute(`
         SELECT 
             DATE_FORMAT(a.appointment_date, '%Y-%m-%d') as date, 
@@ -382,9 +365,7 @@ const changeAvailability = async (req, res) => {
   }
 };
 
-// =======================
-// Get All Patients
-// =======================
+// All Patients
 const getAllPatients = async (req, res) => {
   try {
     const [patients] = await db.execute(`
@@ -406,9 +387,7 @@ const getAllPatients = async (req, res) => {
   }
 };
 
-// =======================
 // Create Appointment by Admin
-// =======================
 const createAppointment = async (req, res) => {
   try {
     const { doctor_id, patient_id, appointment_date, appointment_time } =
@@ -421,19 +400,13 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    // =========================
-    // FORMAT TIME
-    // =========================
-
+    // Format Time
     const formattedTime =
       appointment_time.length === 5
         ? `${appointment_time}:00`
         : appointment_time;
 
-    // =========================
-    // CHECK DOCTOR AVAILABLE
-    // =========================
-
+    // Check Doctor available
     const [doctorStatus] = await db.execute(
       "SELECT available FROM Doctor WHERE doctor_id = ?",
       [doctor_id],
@@ -446,10 +419,7 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    // =========================
-    // CHECK PATIENT CONFLICT
-    // =========================
-
+    // Check Patient
     const [patientConflict] = await db.execute(
       `SELECT * FROM Appointment 
        WHERE patient_id = ?
@@ -466,10 +436,7 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    // =========================
-    // CHECK DOCTOR SLOT
-    // =========================
-
+    // Check Doctor Slot
     const [existing] = await db.execute(
       `SELECT * FROM Appointment 
        WHERE doctor_id = ?
@@ -479,7 +446,7 @@ const createAppointment = async (req, res) => {
     );
 
     if (existing.length > 0) {
-      // 🔹 reuse slot ถ้าเคย cancel
+      // reuse slot ถ้าเคย cancel
       if (existing[0].status === "cancelled") {
         await db.execute(
           `UPDATE Appointment
@@ -494,10 +461,8 @@ const createAppointment = async (req, res) => {
         });
       }
     } else {
-      // =========================
-      // INSERT NEW APPOINTMENT
-      // =========================
 
+      // New Appointment 
       await db.execute(
         `INSERT INTO Appointment 
          (doctor_id, patient_id, appointment_date, appointment_time, status)
@@ -506,10 +471,7 @@ const createAppointment = async (req, res) => {
       );
     }
 
-    // =========================
-    // 🔔 LINE NOTIFICATION
-    // =========================
-
+    // Line Notification
     const [patient] = await db.execute(
       "SELECT line_user_id FROM Patient WHERE patient_id = ?",
       [patient_id],
@@ -528,10 +490,7 @@ const createAppointment = async (req, res) => {
 
       const doctorName = doctor[0]?.name || "Doctor";
 
-      // =========================
-      // FORMAT DATE + TIME (THAI)
-      // =========================
-
+      // Format Date + Time
       const formattedDate = new Date(appointment_date).toLocaleDateString(
         "th-TH",
         {
@@ -599,10 +558,7 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    // =========================
-    // SUCCESS RESPONSE
-    // =========================
-
+    // Success
     res.json({
       success: true,
       message: "Appointment created successfully",
@@ -650,10 +606,7 @@ const getBookedTimes = async (req, res) => {
   }
 };
 
-// =======================
-// Get Patient Appointment History
-// =======================
-
+// Patient Appointment History
 const getPatientAppointments = async (req, res) => {
 
   try {

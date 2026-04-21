@@ -21,9 +21,7 @@ const AllPatients = () => {
   const [sortAppointmentOrder, setSortAppointmentOrder] = useState("desc"); 
   const [sortMedicalOrder, setSortMedicalOrder] = useState("desc");
 
-  // =========================
-  // CALCULATE AGE
-  // =========================
+  // Calaculate Age
   const calculateAge = (dob) => {
     if (!dob) return "-";
     const birthDate = new Date(dob);
@@ -36,9 +34,7 @@ const AllPatients = () => {
     return age > 0 ? age : "-";
   };
 
-  // =========================
-  // GET ALL PATIENTS
-  // =========================
+  // All Patients
   const getAllPatients = async () => {
     try {
       const { data } = await axios.get(backendUrl + "/api/admin/all-patients", {
@@ -54,9 +50,7 @@ const AllPatients = () => {
     }
   };
 
-  // =========================
-  // GET APPOINTMENT HISTORY
-  // =========================
+  // Appointment History
   const getPatientAppointments = async (patientId, patient) => {
     try {
       const { data } = await axios.get(
@@ -75,9 +69,7 @@ const AllPatients = () => {
     }
   };
 
-  // =========================
-  // GET MEDICAL RECORD
-  // =========================
+  // Medical Record
   const getMedicalRecord = async (patientId, patient) => {
     try {
       const { data } = await axios.get(
@@ -104,16 +96,13 @@ const AllPatients = () => {
     setSearch("");
   };
 
-  // =========================
-  // SEARCH FILTER
-  // =========================
+  // Search Filter
   const filteredPatients = patients.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="w-full max-w-6xl m-5">
-      {/* Header + Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
         <p className="text-lg font-medium">All Patients</p>
 
@@ -137,17 +126,15 @@ const AllPatients = () => {
         </div>
       </div>
 
-      {/* Main List Container */}
       <div className="border rounded text-sm bg-white overflow-x-auto">
         <div className="min-w-[900px]">
-          {/* Header Row - Adjusted Grid Ratios */}
           <div className="grid grid-cols-[0.5fr_2.5fr_2fr_1.5fr_0.7fr_0.8fr_1.5fr] py-3 px-6 border-b bg-gray-50 font-medium">
             <p>#</p>
             <p>Patient</p>
             <p>Email</p>
             <p>Phone</p>
             <p>Gender</p>
-            <p className="pl-8">Age</p> {/* Moved Age header to the right */}
+            <p className="pl-8">Age</p> 
             <p className="text-center">Action</p>
           </div>
 
@@ -189,7 +176,7 @@ const AllPatients = () => {
               {/* Gender */}
               <p className="capitalize">{patient.gender || "-"}</p>
 
-              {/* Age - Added Padding Left to shift it from Gender */}
+              {/* Age */}
               <p className="pl-8">{calculateAge(patient.date_of_birth)}</p>
 
               {/* Action Buttons */}
@@ -218,9 +205,7 @@ const AllPatients = () => {
         </div>
       </div>
 
-        {/* =========================
-          APPOINTMENT HISTORY MODAL
-         ========================= */}
+        {/* Appointment History */}
       {showModal && selectedPatient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div
@@ -234,7 +219,6 @@ const AllPatients = () => {
               }
             `}</style>
 
-            {/* Header */}
             <div className="flex justify-between items-center p-5 border-b bg-gray-50/80">
               <div>
                 <h3 className="text-xl font-bold text-gray-800">
@@ -252,12 +236,10 @@ const AllPatients = () => {
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6 overflow-y-auto max-h-[65vh]">
               {appointments.length > 0 ? (
                 <div className="border border-gray-200 rounded-xl overflow-hidden text-sm shadow-sm">
                   
-                  {/* Table Header */}
                   <div className="grid grid-cols-[2.5fr_1.5fr_1fr_1fr] bg-gray-50 text-gray-500 font-semibold py-3 px-5 border-b text-xs uppercase tracking-wider gap-4">
                     <p>Doctor</p>
                     <p 
@@ -270,7 +252,6 @@ const AllPatients = () => {
                     <p className="text-center">Status</p>
                   </div>
 
-                  {/* Table Body */}
                   <div className="divide-y divide-gray-100">
                     {[...appointments]
                       .sort((a, b) => {
@@ -327,16 +308,13 @@ const AllPatients = () => {
         </div>
       )}
 
-        {/* =========================
-          MEDICAL RECORD MODAL
-         ========================= */}
+        {/* Medical Record */}
       {showMedicalModal && selectedPatient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden"
             style={{ animation: "fadeIn 0.2s ease-out" }}
           >
-            {/* Header */}
             <div className="flex justify-between items-center p-5 border-b bg-gray-50/80">
               <div>
                 <h3 className="text-xl font-bold text-gray-800">
@@ -354,11 +332,9 @@ const AllPatients = () => {
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6 overflow-y-auto max-h-[65vh]">
               {medicalRecords.length > 0 ? (
                 <div className="border border-gray-200 rounded-xl overflow-hidden text-sm shadow-sm">
-                  {/* Table Header */}
                   <div className="grid grid-cols-[1.5fr_2fr_2fr] bg-gray-50 text-gray-500 font-semibold py-3 px-5 border-b text-xs uppercase tracking-wider">
                     <p 
                       onClick={() => setSortMedicalOrder(prev => prev === "desc" ? "asc" : "desc")}
@@ -369,8 +345,7 @@ const AllPatients = () => {
                     <p>Symptoms</p>
                     <p>Treatment</p>
                   </div>
-                  
-                  {/* Table Body */}
+                
                   <div className="divide-y divide-gray-100">
                     {[...medicalRecords]
                       .sort((a, b) => {

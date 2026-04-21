@@ -57,11 +57,8 @@ const DoctorProfile = () => {
   if (!profileData) return null;
 
   return (
-    // ปรับ Container ใหม่ เอาส่วนที่ดึงกึ่งกลางหน้าจอออก เพื่อให้การ์ดไหลไปตาม Layout ของ Dashboard
     <div className="w-full p-4 sm:p-8">
-      {/* Main Card */}
       <div className="bg-white w-full max-w-5xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col md:flex-row border border-gray-100">
-        {/* ----- Left Side: Image & Key Info Header ----- */}
         <div className="md:w-2/5 bg-slate-50/50 p-8 sm:p-10 flex flex-col items-center text-center md:border-r border-gray-100 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/10 to-transparent -z-10"></div>
 
@@ -154,7 +151,6 @@ const DoctorProfile = () => {
           </div>
         </div>
 
-        {/* ----- Right Side: Details & Edit Form ----- */}
         <div className="md:w-3/5 p-8 sm:p-12 flex flex-col justify-between">
           <div>
             <div className="mb-8 pb-4 border-b border-gray-100">
@@ -205,7 +201,6 @@ const DoctorProfile = () => {
                   : "Not Available"}
               </label>
 
-              {/* แก้ไขตรงนี้: เอา disabled ออก แล้วใช้ pointer-events-none แทน เพื่อให้สียังคงความเข้มอยู่ (accent-primary) */}
               <input
                 type="checkbox"
                 id="available-checkbox"
@@ -230,7 +225,7 @@ const DoctorProfile = () => {
                   onClick={() => {
                     setIsEdit(false);
                     setImage(null);
-                    getProfileData(); // Reset ข้อมูลกลับไปเป็นของเดิมจาก Database
+                    getProfileData(); 
                   }}
                   className="px-8 py-3 border-2 border-gray-200 text-gray-500 rounded-full font-semibold hover:bg-gray-50 hover:text-gray-700 transition-all active:scale-95"
                 >

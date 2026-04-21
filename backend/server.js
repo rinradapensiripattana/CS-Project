@@ -20,20 +20,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 4000;
 
-/* =============================
-   CLOUDINARY CONFIG
-============================= */
-
+// Cloudinary Config 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_SECRET_KEY,
 });
 
-/* =============================
-   LINE CONFIG
-============================= */
-
+// Line Config
 const lineConfig = {
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.LINE_CHANNEL_SECRET,
@@ -42,11 +36,7 @@ const lineConfig = {
 const client = new line.Client(lineConfig);
 const registerUsers = {};
 
-/* =============================
-   LINE WEBHOOK
-   ต้องมาก่อน express.json()
-============================= */
-
+// Line Webhook ต้องมาก่อน express.json()
 app.post("/webhook", line.middleware(lineConfig), async (req, res) => {
   const events = req.body.events;
 
@@ -212,11 +202,6 @@ app.post("/webhook", line.middleware(lineConfig), async (req, res) => {
   res.sendStatus(200);
 });
 
-/* =============================
-   NORMAL MIDDLEWARE
-============================= */
-
-// CORS
 app.use(
   cors({
     origin: ["http://localhost:5173", "http://localhost:5174"],
@@ -224,34 +209,17 @@ app.use(
   })
 );
 
-// JSON Parser
 app.use(express.json());
 
-/* =============================
-   STATIC FILES
-============================= */
-
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-/* =============================
-   API ROUTES
-============================= */
 
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
 app.use("/api/doctor", doctorRouter);
 
-/* =============================
-   TEST ROUTE
-============================= */
-
 app.get("/", (req, res) => {
   res.send("API IS WORKING");
 });
-
-/* =============================
-   START SERVER
-============================= */
 
 app.listen(port, () => {
   console.log(`Server Started on http://localhost:${port}`);

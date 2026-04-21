@@ -2,7 +2,6 @@ import React, { useContext, useState } from "react";
 import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
 
-// Password Input Component
 const PasswordInput = ({
   label,
   name,
@@ -56,7 +55,7 @@ const ChangePassword = () => {
     confirmPassword: false,
   });
 
-  // 🔥 state สำหรับเช็คว่ากด submit แล้ว
+  // เช็คว่ากด submit แล้ว
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (e) => {
@@ -67,12 +66,10 @@ const ChangePassword = () => {
     setShowPassword((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  // 🔴 EMPTY ERROR
   const isCurrentEmpty = submitted && !form.currentPassword;
   const isNewEmpty = submitted && !form.newPassword;
   const isConfirmEmpty = submitted && !form.confirmPassword;
 
-  // 🔴 OTHER ERROR
   const isLengthError =
     form.newPassword !== "" && form.newPassword.length < 8;
 
@@ -81,7 +78,7 @@ const ChangePassword = () => {
     form.newPassword !== form.confirmPassword;
 
   const handleSubmit = async () => {
-    setSubmitted(true); // 🔥 กดแล้วเริ่ม validate
+    setSubmitted(true); 
 
     if (!form.currentPassword) {
       return toast.error("Please enter current password");

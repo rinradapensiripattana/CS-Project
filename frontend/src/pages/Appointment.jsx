@@ -78,7 +78,7 @@ const Appointment = () => {
 
           const slotDateTime = new Date(`${slotDate}T${slotTimeStr}`);
 
-          // ถ้าเป็นวันนี้ และเวลานั้นเลยเวลาปัจจุบันแล้ว → ไม่แสดง
+          // ถ้าเป็นวันนี้ และเวลานั้นเลยเวลาปัจจุบันแล้วไม่แสดง
           if (d.toDateString() === now.toDateString() && slotDateTime <= now) {
             continue;
           }
@@ -100,7 +100,7 @@ const Appointment = () => {
         }
       }
 
-      // ถ้าไม่มีเวลาเหลือเลย (เช่นเลย 20:30 แล้ว) → วันนั้นจะไม่แสดง
+      // ถ้าไม่มีเวลาเหลือเลย เช่นเลย 20:30 แล้ว วันนั้นจะไม่แสดง
       if (timeSlots.length > 0) {
         allSlots.push(timeSlots);
       }

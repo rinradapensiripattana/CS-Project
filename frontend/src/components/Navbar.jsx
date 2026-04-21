@@ -61,7 +61,6 @@ const Navbar = () => {
       </ul>
 
       <div className="flex items-center gap-4">
-        {/* ✅ ถ้า login แล้ว */}
         {token && !loadingUser && userData ? (
           <div className="flex items-center gap-2 cursor-pointer group relative">
             <div className="flex flex-col items-end">

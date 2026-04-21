@@ -6,7 +6,6 @@ const TopDoctor = () => {
   const navigate = useNavigate();
   const { doctors } = useContext(AppContext);
 
-  // ✅ เพิ่มบรรทัดนี้
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   return (

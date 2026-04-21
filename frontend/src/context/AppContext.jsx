@@ -13,12 +13,10 @@ const AppContextProvider = (props) => {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [userData, setUserData] = useState(null);
 
-  // ✅ Axios Instance
   const axiosInstance = axios.create({
     baseURL: backendUrl,
   });
 
-  // ✅ Attach token automatically
   axiosInstance.interceptors.request.use((config) => {
     const storedToken = localStorage.getItem("token");
     if (storedToken) {
@@ -27,16 +25,12 @@ const AppContextProvider = (props) => {
     return config;
   });
 
-  // ===================================
-  // 🔹 Get Doctors (SQL Version Safe)
-  // ===================================
+  // Doctors (SQL)
   const getDoctorsData = async () => {
     try {
       const { data } = await axiosInstance.get("/api/doctor/list");
 
       if (data.success) {
-
-        // ✅ ป้องกัน undefined
         if (Array.isArray(data.doctors)) {
           setDoctors(data.doctors);
         } else {
@@ -53,9 +47,7 @@ const AppContextProvider = (props) => {
     }
   };
 
-  // ===================================
-  // 🔹 Load User Profile
-  // ===================================
+  // User Profile
   const loadUserProfileData = async () => {
     try {
       const { data } = await axiosInstance.get("/api/user/get-profile");
@@ -73,9 +65,6 @@ const AppContextProvider = (props) => {
     }
   };
 
-  // ===================================
-  // 🔹 Save Token Automatically
-  // ===================================
   useEffect(() => {
     if (token) {
       localStorage.setItem("token", token);
@@ -86,16 +75,10 @@ const AppContextProvider = (props) => {
     }
   }, [token]);
 
-  // ===================================
-  // 🔹 Initial Load
-  // ===================================
   useEffect(() => {
     getDoctorsData();
   }, []);
 
-  // ===================================
-  // Context Value
-  // ===================================
   const value = {
     doctors,
     getDoctorsData,

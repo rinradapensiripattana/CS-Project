@@ -124,7 +124,6 @@ const Login = () => {
         }
       }
     } catch (error) {
-      // ดึงข้อความ Error จริงๆ จาก Backend มาแสดง ถ้าไม่มีให้แสดง error.message ของระบบ
       toast.error(error.response?.data?.message || error.message);
     }
   };
@@ -142,7 +141,6 @@ const Login = () => {
           {state === "Sign Up" ? "Create Account" : "Login"}
         </p>
 
-        {/* ================= REGISTER FIELDS ================= */}
         {state === "Sign Up" && (
           <>
             <div className="w-full">
@@ -215,7 +213,6 @@ const Login = () => {
           </>
         )}
 
-        {/* ================= EMAIL ================= */}
         <div className="w-full">
           <p>Email</p>
           <input
@@ -226,7 +223,6 @@ const Login = () => {
           />
         </div>
 
-        {/* ================= PASSWORD ================= */}
         <div className="w-full">
           <p>Password</p>
           <div className="relative">
@@ -245,7 +241,6 @@ const Login = () => {
           </div>
         </div>
 
-        {/* ================= CONSENT ================= */}
         {state === "Sign Up" && (
           <>
             <div className="flex items-center gap-2 w-full mt-2">
@@ -292,7 +287,6 @@ const Login = () => {
           </>
         )}
 
-        {/* ================= BUTTON ================= */}
         <button
           type="submit"
           className="bg-primary text-white w-full py-2 rounded-md mt-2 transition-all hover:bg-primary/90"
@@ -300,7 +294,6 @@ const Login = () => {
           {state === "Sign Up" ? "Create account" : "Login"}
         </button>
 
-        {/* ================= TOGGLE ================= */}
         <p>
           {state === "Sign Up"
             ? "Already have account?"

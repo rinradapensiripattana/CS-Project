@@ -9,9 +9,6 @@ const MyAppointment = () => {
   // เพิ่ม State สำหรับจัดการ Tab (ค่าเริ่มต้นคือ upcoming)
   const [activeTab, setActiveTab] = useState("upcoming");
 
-  // ========================
-  // FORMAT DATE & TIME
-  // ========================
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
@@ -21,10 +18,9 @@ const MyAppointment = () => {
     });
   };
 
-  // ฟังก์ชันแปลงเวลา (String) เป็นจำนวนนาที เพื่อใช้เปรียบเทียบ
+  // ฟังก์ชันแปลงเวลา(String) เป็นจำนวนนาที 
   const parseTime = (timeStr) => {
     if (!timeStr) return 0;
-    // รองรับทั้ง 24h ("14:30") และ 12h ("02:30 PM")
     const [time, modifier] = timeStr.split(" ");
     let [hours, minutes] = time.split(":");
     hours = parseInt(hours, 10);
@@ -37,9 +33,7 @@ const MyAppointment = () => {
     return hours * 60 + minutes;
   };
 
-  // ========================
-  // GET APPOINTMENTS
-  // ========================
+  // User Appointments
   const getUserAppointments = async () => {
     try {
       const { data } = await axiosInstance.get("/api/user/appointments");
@@ -52,9 +46,7 @@ const MyAppointment = () => {
     }
   };
 
-  // ========================
-  // CANCEL APPOINTMENT
-  // ========================
+  // Cancel Appointment
   const cancelAppointment = async (appointment_id) => {
     try {
       const { data } = await axiosInstance.post(
@@ -77,13 +69,11 @@ const MyAppointment = () => {
     }
   }, [token]);
 
-  // ========================
-  // SEPARATE & SORT APPOINTMENTS
-  // ========================
+  // Sort Appointment
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
 
-  // Upcoming: เรียงวันที่ใกล้สุดขึ้นก่อน -> ถ้าวันเดียวกัน เอาเวลาเช้าสุดขึ้นก่อน
+  // เรียงวันที่ใกล้สุดขึ้นก่อน ถ้าวันเดียวกัน เอาเวลาเช้าสุดขึ้นก่อน
   const upcomingAppointments = appointments
     .filter(
       (item) =>
@@ -99,7 +89,7 @@ const MyAppointment = () => {
       return parseTime(a.appointment_time) - parseTime(b.appointment_time); // เทียบเวลา
     });
 
-  // Past: เรียงวันที่เพิ่งผ่านมาล่าสุดขึ้นก่อน -> ถ้าวันเดียวกัน เอาเวลาดึกล่าสุดขึ้นก่อน
+  // เรียงวันที่เพิ่งผ่านมาล่าสุดขึ้นก่อน ถ้าวันเดียวกัน เอาเวลาดึกสุดขึ้นก่อน
   const pastAppointments = appointments
     .filter(
       (item) =>
@@ -115,7 +105,7 @@ const MyAppointment = () => {
       return parseTime(b.appointment_time) - parseTime(a.appointment_time); // เทียบเวลา
     });
 
-  // ฟังก์ชันเช็คสีของ Status
+  // เช็คสีของ Status
   const getStatusColor = (status) => {
     if (status === "completed") return "text-green-500";
     if (status === "confirmed") return "text-blue-500";
@@ -128,10 +118,6 @@ const MyAppointment = () => {
       <p className="pb-3 mt-3 font-medium text-zinc-700 border-b">
         My Appointments
       </p>
-
-      {/* -----------------------------
-          TAB NAVIGATION
-      ------------------------------ */}
       <div className="flex gap-6 pt-4 pb-2 mb-4 border-b text-sm">
         <button
           onClick={() => setActiveTab("upcoming")}
@@ -152,12 +138,7 @@ const MyAppointment = () => {
           Past & Cancelled
         </button>
       </div>
-
-      {/* -----------------------------
-          TAB CONTENT
-      ------------------------------ */}
       <div>
-        {/* แสดงผลเมื่อเลือกแท็บ Upcoming */}
         {activeTab === "upcoming" && (
           <div>
             {upcomingAppointments.length === 0 ? (
@@ -207,8 +188,6 @@ const MyAppointment = () => {
             )}
           </div>
         )}
-
-        {/* แสดงผลเมื่อเลือกแท็บ Past */}
         {activeTab === "past" && (
           <div>
             {pastAppointments.length === 0 ? (

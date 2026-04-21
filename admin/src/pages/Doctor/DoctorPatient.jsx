@@ -69,7 +69,6 @@ const DoctorPatient = () => {
 
   return (
     <div className="w-full max-w-6xl m-5">
-      {/* ================= PATIENT LIST ================= */}
 
       {!selectedPatient && (
         <>
@@ -77,7 +76,7 @@ const DoctorPatient = () => {
             Patient Medical History
           </p>
 
-          {/* SEARCH */}
+          {/* Search */}
           <div className="flex items-center gap-2 mb-5">
             <input
               type="text"
@@ -122,8 +121,7 @@ const DoctorPatient = () => {
         </>
       )}
 
-      {/* ================= MEDICAL HISTORY ================= */}
-
+      {/* Medical History */}
       {selectedPatient && (
         <>
           <button

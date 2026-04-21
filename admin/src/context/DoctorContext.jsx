@@ -8,12 +8,10 @@ const DoctorContextProvider = (props) => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // Axios instance
   const axiosInstance = axios.create({
     baseURL: backendUrl,
   });
 
-  // ================= STATE =================
   const [dToken, setDToken] = useState(
     localStorage.getItem("dToken") || ""
   );
@@ -22,7 +20,6 @@ const DoctorContextProvider = (props) => {
   const [dashData, setDashData] = useState(false);
   const [profileData, setProfileData] = useState(false);
 
-  // ================= INTERCEPTOR =================
   axiosInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem("dToken");
     if (token) {
@@ -31,7 +28,6 @@ const DoctorContextProvider = (props) => {
     return config;
   });
 
-  // ================= GET APPOINTMENTS =================
   const getAppointments = async () => {
     try {
       const { data } = await axiosInstance.get(
@@ -55,7 +51,6 @@ const DoctorContextProvider = (props) => {
     }
   };
 
-  // ================= GET DASHBOARD =================
   const getDashData = async () => {
     try {
       const { data } = await axiosInstance.get(
@@ -77,7 +72,6 @@ const DoctorContextProvider = (props) => {
     }
   };
 
-  // ================= GET PROFILE =================
   const getProfileData = async () => {
     try {
       const { data } = await axiosInstance.get(
@@ -99,7 +93,6 @@ const DoctorContextProvider = (props) => {
     }
   };
 
-  // ================= CANCEL =================
   const cancelAppointment = async (appointmentId) => {
     try {
       const { data } = await axiosInstance.post(
@@ -141,7 +134,6 @@ const DoctorContextProvider = (props) => {
     }
   };
 
-  // ================= COMPLETE =================
   const completeAppointment = async (appointmentId) => {
     try {
       const { data } = await axiosInstance.post(
@@ -163,7 +155,6 @@ const DoctorContextProvider = (props) => {
     }
   };
 
-  // ================= LOGIN =================
   const loginDoctor = async (email, password) => {
     try {
       const { data } = await axios.post(
@@ -184,7 +175,6 @@ const DoctorContextProvider = (props) => {
     }
   };
 
-  // ================= LOGOUT =================
   const logout = () => {
     setDToken("");
     localStorage.removeItem("dToken");
@@ -193,7 +183,6 @@ const DoctorContextProvider = (props) => {
     setProfileData(false);
   };
 
-  // ================= AUTO FETCH =================
   useEffect(() => {
     if (dToken) {
       getAppointments();
@@ -202,7 +191,6 @@ const DoctorContextProvider = (props) => {
     }
   }, [dToken]);
 
-  // ================= PROVIDER VALUE =================
   const value = {
     dToken,
     setDToken,

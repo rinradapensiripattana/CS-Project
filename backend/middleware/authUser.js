@@ -22,7 +22,6 @@ const authUser = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // ✅ เก็บไว้ใน req.user
     req.user = { id: decoded.id };
 
     next();

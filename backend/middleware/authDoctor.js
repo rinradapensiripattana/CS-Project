@@ -16,7 +16,6 @@ const authDoctor = (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-        // ✅ เซ็ตให้ controller ใช้ได้
         req.doctor = decoded
 
         next()

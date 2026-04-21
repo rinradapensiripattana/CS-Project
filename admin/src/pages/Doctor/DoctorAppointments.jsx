@@ -23,7 +23,7 @@ const DoctorAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [viewMode, setViewMode] = useState(
     location.state?.initialViewMode || "list",
-  ); // "list" | "calendar"
+  ); 
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showModal, setShowModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -54,7 +54,7 @@ const DoctorAppointments = () => {
     }
   };
 
-  // สร้างฟังก์ชัน Cancel แยกมาไว้ในนี้เพื่อให้สามารถเรียก getAppointments() รีเฟรชหน้าจอได้ทันที
+  // สร้างฟังก์ชัน Cancel แยกมาไว้ในนี้เพื่อให้สามารถเรียก getAppointments() ตอนรีเฟรชหน้าจอได้ทันที
   const cancelAppointment = async (appointment_id) => {
     try {
       const { data } = await axios.post(
@@ -147,7 +147,7 @@ const DoctorAppointments = () => {
   );
   const totalPages = Math.ceil(finalFiltered.length / itemsPerPage);
 
-  // Data for Calendar View (All statuses, but still applies search and date filters)
+  // Data for Calendar View 
   const calendarAppointments = appointments.filter((item) => {
     // Search filter
     if (search && !item.name?.toLowerCase().includes(search.toLowerCase()))
@@ -161,9 +161,7 @@ const DoctorAppointments = () => {
     return true;
   });
 
-  // ========================
-  // CALENDAR LOGIC
-  // ========================
+  // Calendar 
   const daysInMonth = new Date(
     calendarDate.getFullYear(),
     calendarDate.getMonth() + 1,
@@ -201,7 +199,6 @@ const DoctorAppointments = () => {
 
   return (
     <div className="w-full max-w-6xl m-5">
-      {/* Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-3">
         <p className="text-lg font-medium">Doctor Appointments</p>
 
@@ -214,7 +211,6 @@ const DoctorAppointments = () => {
             className="border px-3 py-1 rounded text-sm w-48"
           />
 
-          {/* From */}
           <div className="flex items-center gap-1">
             <label className="text-sm text-gray-600">From</label>
             <input
@@ -225,7 +221,6 @@ const DoctorAppointments = () => {
             />
           </div>
 
-          {/* To */}
           <div className="flex items-center gap-1">
             <label className="text-sm text-gray-600">To</label>
             <input
@@ -246,8 +241,6 @@ const DoctorAppointments = () => {
           )}
         </div>
       </div>
-
-      {/* Tabs & View Mode Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b mb-4">
         <div className="flex gap-6">
           {["upcoming", "completed", "cancelled"].map((tab) => (
@@ -281,10 +274,8 @@ const DoctorAppointments = () => {
         </div>
       </div>
 
-      {/* List View */}
       {viewMode === "list" && (
         <div className="bg-white border rounded text-sm max-h-[70vh] overflow-y-auto">
-          {/* Header */}
           <div className="hidden sm:grid grid-cols-[0.5fr_2fr_1fr_2fr_1fr] gap-2 py-3 px-6 border-b bg-gray-50 font-medium">
             <p>#</p>
             <p>Patient</p>
@@ -399,7 +390,6 @@ const DoctorAppointments = () => {
             </div>
           ))}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-end items-center gap-4 p-4">
               <button
@@ -429,7 +419,6 @@ const DoctorAppointments = () => {
       {/* Calendar View */}
       {viewMode === "calendar" && (
         <div className="bg-white border rounded-xl p-5 shadow-sm">
-          {/* Calendar Header */}
           <div className="flex justify-between items-center mb-6">
             <button
               onClick={prevMonth}
@@ -535,9 +524,7 @@ const DoctorAppointments = () => {
         </div>
       )}
 
-      {/* ======================== */}
-      {/* APPOINTMENT MODAL */}
-      {/* ======================== */}
+      {/* Appointment */}
       {showModal && selectedAppointment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div
@@ -551,7 +538,6 @@ const DoctorAppointments = () => {
               }
             `}</style>
 
-            {/* Header */}
             <div className="flex justify-between items-center p-5 border-b bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-800">
                 Appointment Details
@@ -564,7 +550,6 @@ const DoctorAppointments = () => {
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
                 <img
@@ -618,7 +603,6 @@ const DoctorAppointments = () => {
               </div>
             </div>
 
-            {/* Footer Actions */}
             {selectedAppointment.status === "confirmed" && (
               <div className="p-5 border-t bg-gray-50 flex justify-end gap-3">
                 <button

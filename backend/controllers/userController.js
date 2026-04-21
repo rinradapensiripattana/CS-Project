@@ -8,10 +8,7 @@ const lineClient = new line.Client({
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
 });
 
-// ===============================
-// FORMAT DATE
-// ===============================
-
+// Format Date
 const formatThaiDate = (date) => {
   const d = new Date(date);
 
@@ -26,10 +23,7 @@ const formatTime = (time) => {
   return time.substring(0, 5);
 };
 
-// =====================================================
-// 🔹 REGISTER USER
-// =====================================================
-
+// Register User
 const registerUser = async (req, res) => {
   try {
     let { name, email, password, dob, gender, phone, id_number } = req.body;
@@ -106,10 +100,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 LOGIN USER
-// =====================================================
-
+// Login User
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -152,10 +143,7 @@ const loginUser = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 GET PROFILE
-// =====================================================
-
+// Profile
 const getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -198,10 +186,7 @@ const getProfile = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 UPDATE PROFILE
-// =====================================================
-
+// Update Profile
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -242,10 +227,7 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 LIST USER APPOINTMENTS
-// =====================================================
-
+// List User Appointments
 const listAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -284,10 +266,7 @@ const listAppointment = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 CANCEL APPOINTMENT
-// =====================================================
-
+// Cancel Appointment
 const cancelAppointment = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -329,10 +308,7 @@ const cancelAppointment = async (req, res) => {
       [appointment_id, userId],
     );
 
-    // =====================
-    // 🔔 LINE NOTIFICATION
-    // =====================
-
+    // Line Notification
     if (data.line_user_id) {
       await lineClient.pushMessage(data.line_user_id, {
         type: "flex",
@@ -407,10 +383,7 @@ const cancelAppointment = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 BOOK APPOINTMENT + LINE NOTIFICATION
-// =====================================================
-
+// Book Appointment + Line Notification
 const bookAppointment = async (req, res) => {
   try {
     const { doctor_id, appointment_date, appointment_time } = req.body;
@@ -489,10 +462,6 @@ const bookAppointment = async (req, res) => {
         [doctor_id, patientId, appointment_date, appointment_time],
       );
     }
-
-    // =============================
-    // 🔔 LINE NOTIFICATION
-    // =============================
 
     if (lineUserId) {
       const [doctor] = await db.query(
@@ -577,10 +546,7 @@ const bookAppointment = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 GET DOCTOR APPOINTMENTS
-// =====================================================
-
+// Doctor Appointments
 const getDoctorAppointments = async (req, res) => {
   try {
     const { docId } = req.params;
@@ -613,10 +579,7 @@ const getDoctorAppointments = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 GET MEDICAL HISTORY
-// =====================================================
-
+// Medical History
 const getMedicalHistory = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -654,16 +617,13 @@ const getMedicalHistory = async (req, res) => {
   }
 };
 
-// =====================================================
-// 🔹 CHANGE PASSWORD
-// =====================================================
-
+// Change Password
 const changePassword = async (req, res) => {
   try {
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
-    // 🔸 เช็คว่ากรอกครบไหม
+    // เช็คว่ากรอกครบไหม
     if (!currentPassword || !newPassword) {
       return res.json({
         success: false,
@@ -671,7 +631,7 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // 🔸 ดึง user
+    // ดึง user
     const [rows] = await db.query(
       "SELECT password FROM Users WHERE user_id = ?",
       [userId]
@@ -686,7 +646,7 @@ const changePassword = async (req, res) => {
 
     const user = rows[0];
 
-    // 🔸 เช็ค password เดิม
+    // เช็ค password เดิม
     const isMatch = await bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
@@ -696,10 +656,10 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // 🔸 hash password ใหม่
+    // password ใหม่
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // 🔸 update
+    // update
     await db.query(
       "UPDATE Users SET password = ? WHERE user_id = ?",
       [hashedPassword, userId]

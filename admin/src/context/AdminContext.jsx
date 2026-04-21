@@ -18,9 +18,7 @@ const AdminContextProvider = (props) => {
     const [appointments, setAppointments] = useState([])
     const [dashData, setDashData] = useState(false)
 
-    // =========================
-    // Get All Doctors
-    // =========================
+    // All Doctors
     const getAllDoctors = async () => {
         try {
             const { data } = await axios.get(
@@ -39,15 +37,13 @@ const AdminContextProvider = (props) => {
         }
     }
 
-    // =========================
-    // Change Doctor Availability ✅ แก้ตรงนี้
-    // =========================
+    // Change Doctor Availability 
     const changeAvailability = async (doctorId) => {
         try {
 
             const { data } = await axios.post(
                 backendUrl + '/api/admin/change-availability',
-                { doctorId },   // ✅ ชื่อต้องตรงกับ backend
+                { doctorId },   // ชื่อต้องตรงกับ backend
                 { headers: { aToken } }
             )
 
@@ -63,9 +59,7 @@ const AdminContextProvider = (props) => {
         }
     }
 
-    // =========================
-    // Get All Appointments
-    // =========================
+    // All Appointments
     const getAllAppointments = async () => {
         try {
 
@@ -85,9 +79,7 @@ const AdminContextProvider = (props) => {
         }
     }
 
-    // =========================
     // Cancel Appointment
-    // =========================
     const cancelAppointment = async (appointmentId) => {
         try {
 
@@ -110,9 +102,7 @@ const AdminContextProvider = (props) => {
         }
     }
 
-    // =========================
     // Dashboard Data
-    // =========================
     const getDashData = async () => {
         try {
 
